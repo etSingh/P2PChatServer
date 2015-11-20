@@ -15,6 +15,7 @@ class Server
     @descriptors.push(@serverSocket)
     @threadPool=Thread.pool(4) #There can be a maximum of 4 threads at a time
     @retryJoinReqFlag=0
+    @chatroom=Hash.new
     @sock_domain 
     @remote_port 
     @remote_hostname 
@@ -27,8 +28,13 @@ class Server
     puts "log: Connection from #{@remote_ip} at port #{@remote_port}"
   end
   
-  def chatRoom
-    puts "log: Creating chatroom"
+  def chatRoom(chatname)
+    hash=0
+    chatname.each_byte do |i| 
+      hash=hash*31 + i 
+    end
+    puts "log:chatroom #{chatname} created"
+    return hash     
   end
   
 
@@ -36,13 +42,12 @@ class Server
     join_details=Array.new 
     join_details[0]=input.slice((input.index(':')+1)..input.length)   
     i=1
-    while (i<3)
+    while (i<=3)
         input=client.gets.chomp
         join_details[i]=input.slice((input.index(':')+1)..input.length)
         if i==3
             flag=checkname(join_details[3], client)
             if flag==1 # If the username is already taken, get response from client if it wants to retry or not
-              #checkname
               input=client.gets
               if input[0,5]=="Close" # If the answer recieved is close, then close the connection
                 puts "log: Closing connection to client on port #{@remote_port}"
@@ -56,11 +61,10 @@ class Server
         end
         i+=1
     end
-    puts "log:break caused end of while loop"
     
       if @retryJoinReqFlag==0
-        chatRoom
-        client.puts "JOINED_CHATROOM:#{join_details[0]}\nSERVER_IP:#{@host}\nPORT:#{@port}\nROOM_REF:\nJOIN_ID:\n"
+        room_ref=chatRoom(join_details[0])
+        client.puts "JOINED_CHATROOM:#{join_details[0]}\nSERVER_IP:#{@host}\nPORT:#{@port}\nROOM_REF:#{room_ref}\nJOIN_ID: 1\n"
       else 
         puts "log: going back to run"
       end
@@ -101,6 +105,7 @@ class Server
   def handle_Connection(input, client)
     if input[0,4]=="HELO"
       client.puts "#{input}\nIP:#{@host}\nPort:#{@port}\nStudentID:#{@StudentID}\n"
+      puts "log: sending HELO message"
     elsif input=="KILL_SERVICE"
       terminate
     elsif input[0,13]=="JOIN_CHATROOM"
@@ -111,6 +116,7 @@ class Server
       end
     else
       client.puts "Invalid Input \n"
+      puts "log:sending invalid message"
     end
   end
 
