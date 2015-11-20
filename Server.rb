@@ -32,10 +32,11 @@ class Server
   end
   
 
-  def servJoinReq(client)
+  def servJoinReq(input,client)
     i=0;
-    join_details=Array.new    
-    while (i<4)
+    join_details=Array.new 
+    join_details[0]=input.slice((input.index(':')+1)..input.length)   
+    while (i<3)
         input=client.gets.chomp
         join_details[i]=input.slice((input.index(':')+1)..input.length)
         if i==3
@@ -90,7 +91,7 @@ class Server
 
   def new_Connection(client)
       while true
-      input=client.gets
+      input=client.gets.chomp
       puts "log: got input from client #{@remote_port}"
       puts "From #{client} #{@remote_port}: #{input}"
       handle_Connection(input, client)
@@ -99,9 +100,15 @@ class Server
 
   def handle_Connection(input, client)
     if input[0,4]=="HELO"
-      client.puts "#{input}IP:#{@host}\nPort:#{@port}\nStudentID:#{@StudentID}\n"
-    elsif input=="KILL_SERVICE\n"
+      client.puts "#{input}\nIP:#{@host}\nPort:#{@port}\nStudentID:#{@StudentID}\n"
+    elsif input=="KILL_SERVICE"
       terminate
+    elsif input[0,13]=="JOIN_CHATROOM"
+      servJoinReq(input, client)
+      if @retryJoinReqFlag==1
+         @retryJoinReqFlag=0
+         servJoinReq(input, client)
+      end
     else
       client.puts "Invalid Input \n"
     end
@@ -129,12 +136,6 @@ class Server
       client=@serverSocket.accept 
       @descriptors.push(client)
       welcome(client)
-      servJoinReq(client)
-      if @retryJoinReqFlag==1
-        puts "Inside run again, calling servJoinReq"
-        @retryJoinReqFlag=0
-        servJoinReq(client)
-      end
       new_Connection(client)
       }
     end

@@ -76,12 +76,10 @@ def run
 		if l[0,4]=="HELO"
 			puts "From Server: "
 			i=0
-			while(lineFromServer=@s.gets)
+			while(i<=3)
+				lineFromServer=@s.gets
 			 	puts "#{lineFromServer}"
 			 	i+=1
-			 	if(i==4)
-			 	   break
-				end
 			end
     	else
 	    	lineFromServer=@s.gets
