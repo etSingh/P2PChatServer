@@ -33,9 +33,9 @@ class Server
   
 
   def servJoinReq(input,client)
-    i=0;
     join_details=Array.new 
     join_details[0]=input.slice((input.index(':')+1)..input.length)   
+    i=1
     while (i<3)
         input=client.gets.chomp
         join_details[i]=input.slice((input.index(':')+1)..input.length)
