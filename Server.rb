@@ -8,13 +8,16 @@ class Server
   def initialize(host,port)
     @host=host
     @port=port
-    @descriptors=Array.new #Stores all client sockets and the server socket
-    @clientName=Hash.new #Probably this isn't of any use either
+    @clientName=Hash.new # Stores the name of all the clients, join_ID as key, clientname as value
     @serverSocket= TCPServer.open(@host,@port)
+    @descriptors=Array.new #Stores all client sockets and the server socket
     @descriptors.push(@serverSocket)
+    @clientSoc=Hash.new # client socket as key and join_ID as value
     @threadPool=Thread.pool(4) #There can be a maximum of 4 threads at a time
     @retryJoinReqFlag=0
-    @chatRoom=Hash.new
+    @chatRooms=Hash.new([].freeze) # Stores the chatname hash value as key, and an array of the client sockets who are in that room 
+    @roomName=Hash.new # room_ref as key, chatroom name as value
+    @clientRooms=Hash.new([].freeze) #client as key, array of connected room_ref as value
     @StudentID=ARGV[2]||152
   end
   
@@ -22,23 +25,31 @@ class Server
     puts "log: Connection from client #{client}"
   end
   
-  def chatRoom(chatname)
+  def chatRoom(chatRoomName, client)
+    puts "log: Inside chatRoom method"
     flag=0
-    @chatRoom.each do |key, value|
-      if key==hash
-         #chat=value
-         flag=1
+    room_ref=hashCode(chatRoomName)
+    puts "log: room_ref= #{room_ref}"
+    @chatRooms.each do |key, value| #Checks to see if chatroom is already present, if it is, then adds the client
+      if key==room_ref
+        flag=1
+        @chatRooms[key] += [client]
       end
     end
     if flag==0
-    newChatroom=hashCode(chatname)
-    @chatRoom[newChatroom]=chatname
-    puts "log:chatroom #{chatname} created"
-    puts "log:printing @chatRoom #{@chatRoom}"
+    @roomName[room_ref]=chatRoomName
+    puts "log: adding client in #{chatRoomName}"
+    @chatRooms[room_ref] += [client]
     end
+    @clientRooms[client] += [room_ref]
+    puts "log:client added"
+    puts "log:chatroom #{chatRoomName} created"
+    puts "log:printing @chatRooms #{@chatRooms}"
+    puts "log:printing @roomName #{@roomName}"
+    puts "log:printing @clientRooms #{@clientRooms}"
   end
 
-  def hashCode(str)
+  def hashCode(str) #This function generates a hash code of the string it receives 
     hash=0
     str.each_byte do |i| 
       hash=hash*31 + i 
@@ -46,33 +57,53 @@ class Server
     return hash     
   end
   
+  def disconnectClient(client)
+     puts "log: Closing connection to client on port #{@remote_port}"
+     @descriptors.pop(client)
+     
+     client.close
+   end
+  
   def initiateCheckname(username, client)
-    reply=checkname(username, client)
-    if reply==1 # If the username is already taken, get response from client if it wants to retry or not
-      input=client.gets
+    reply=checkname(username, client) #Gets 1 from checkname if username is already taken, else gets 0
+    puts "log: got reply #{reply}"
+    if reply==1 
+      input=client.gets # If the username is already taken, get response from client if it wants to retry or not
           if input[0,5]=="Close" # If the answer recieved is close, then close the connection
-            puts "log: Closing connection to client on port #{@remote_port}"
-            @descriptors.pop(client)
-            client.close
+             disconnectClient(client)
           else    #The client wants to retry
             @retryJoinReqFlag=1
           end
     end
+    puts "log: initiateCheckname over \n"
   end
   
+  def welcomeMessage(client)
+    #puts "#{@descriptors}"
+    #puts "Inside welcomeMessage:  client: #{client} Client socket #{@clientSoc} client room: #{@clientRooms} Client Name #{@clientName}"
+    msg="#{@clientName[@clientSoc[client]]} has joined this chatroom"
+    broadcastMessage(msg, client)
+    puts "log: Welcome message sent \n"
+  end
+
+  def broadcastMessage(str, client)
+  client.puts str
+  end
+
   def sendJoinReqMsg(join_details, client)
-    chatRoom(join_details[0])
-    client.puts "JOINED_CHATROOM:#{join_details[0]}\nSERVER_IP:#{@host}\nPORT:#{@port}\nROOM_REF:#{@chatRoom.key(join_details[0])}\nJOIN_ID:#{@clientName.key(join_details[3])}\n"
+    chatRoom(join_details[0], client)
+    client.puts "JOINED_CHATROOM:#{join_details[0]}\nSERVER_IP:#{@host}\nPORT:#{@port}\nROOM_REF:#{@roomName.key(join_details[0])}\nJOIN_ID:#{@clientName.key(join_details[3])}\n"
+    puts "log: join request message sent to client"
   end
   
   def servJoinReq(input,client)
     join_details=Array.new 
-    join_details[0]=input.slice((input.index(':')+1)..input.length)   
+    join_details[0]=input.slice((input.index(':')+1)..input.length).chomp
     i=1
-      while (i<=3)
+      while (i<=3) # This loop extracts the client details from the join request and stores it in the join_details array
           input=client.gets.chomp
-          join_details[i]=input.slice((input.index(':')+1)..input.length)
-          if i==3
+          join_details[i]=input.slice((input.index(':')+1)..input.length).chomp
+          if i==3 #Checks to see if the client name is already taken
            initiateCheckname(join_details[3], client)  
           end
           if @retryJoinReqFlag==1 # If the client opts to get a new username, come of the loop and go back to the run method
@@ -82,6 +113,7 @@ class Server
       end
       
         if @retryJoinReqFlag==0
+          puts "log: Calling sendJoinReqMsg"
           sendJoinReqMsg(join_details, client)
         end
   end
@@ -101,12 +133,13 @@ class Server
       end
       if flag==0  #if username is available, it is pushed into the hash @chatName
         clientID=hashCode(input)
-        @clientName[clientID]=input
-        puts "log: Username #{input} created for client on port #{@remote_port}"
+        @clientName[clientID]=input # Stores the Client name with it's key as the join ID
+        @clientSoc[client]=clientID
+        puts "log: Username #{input} created for client #{@clientSoc[client]}"
+        puts "log: Client socket= #{@clientSoc}"
       else
         raiseError(0, client)
       end
-      puts "log: printing @clientName in checkname method#{@clientName}"
       return flag
   end
 
@@ -117,6 +150,31 @@ class Server
       handle_Connection(input, client)
       end
   end
+  
+  def sendleaveMsg(leave_details, client)
+      client.puts "LEFT_CHATROOM:#{leave_details[0]}\nJOIN_ID:#{leave_details[1]}"
+      puts "****************leave message sent**************"
+      puts "LEFT_CHATROOM:#{leave_details[0]}\nJOIN_ID:#{leave_details[1]}"
+      puts "************************************************"
+      @clientRooms[client] -= [leave_details[0]]
+      @chatRooms[leave_details[0]] -= [client]
+      msg="#{@clientName[@clientSoc[client]]} has left this chatroom"
+      broadcastMessage(msg, client)
+      puts "log: new value of @clientRooms: #{@clientRooms} \n@chatRooms: #{@chatRooms}"
+  end
+  
+  def leaveChatroomMsg(input, client)
+    i=1
+    leave_details=Array.new
+    leave_details[0]=input.slice((input.index(':')+1)..input.length).to_i
+    while i<=2
+      input=client.gets
+      leave_details[i]=input.slice((input.index(':')+1)..input.length).to_i
+      i+=1
+    end
+    puts "log: leave_details:- #{leave_details}"
+    sendleaveMsg(leave_details, client)
+  end
 
   def handle_Connection(input, client)
     if input[0,4]=="HELO"
@@ -125,21 +183,24 @@ class Server
     elsif input=="KILL_SERVICE"
       terminate
     elsif input[0,13]=="JOIN_CHATROOM"
-      servJoinReq(input, client)
-      if @retryJoinReqFlag==1 #check if the username already taken error was raised and the client opted to try again
+      servJoinReq(input, client) # Service the join request of the client
+      if @retryJoinReqFlag==1 #check if the "username already taken" error was raised and the client opted to try again
          @retryJoinReqFlag=0
          servJoinReq(input, client)
       end
+      welcomeMessage(client) #Send a welcome message to the client
+    elsif input[0,14]=="LEAVE_CHATROOM"
+      leaveChatroomMsg(input, client)
     else
-      client.puts "Invalid Input \n"
-      puts "log:sending invalid message"
+      #client.puts "Invalid Input \n"
+      puts "log: Invalid message"
     end
   end
 
   def terminate #terminates all socket connections, terminating clients first
     @descriptors.each do |socket|  
       if socket!= @serverSocket
-         socket.puts "Goodbye"
+         #socket.puts "Goodbye"
          socket.close
       end
     end
@@ -156,7 +217,7 @@ class Server
     while true
       @threadPool.process {
       client=@serverSocket.accept 
-      @descriptors.push(client)
+      @descriptors.push(client) #Pushes the name of the client
       welcome(client)
       new_Connection(client)
       }
