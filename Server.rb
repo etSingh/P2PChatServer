@@ -47,6 +47,7 @@ class Server
     puts "log:printing @chatRooms #{@chatRooms}"
     puts "log:printing @roomName #{@roomName}"
     puts "log:printing @clientRooms #{@clientRooms}"
+    return room_ref
   end
 
   def hashCode(str) #This function generates a hash code of the string it receives 
@@ -78,22 +79,25 @@ class Server
     puts "log: initiateCheckname over \n"
   end
   
-  def welcomeMessage(client)
+  def welcomeMessage(room_ref, client)
     #puts "#{@descriptors}"
     #puts "Inside welcomeMessage:  client: #{client} Client socket #{@clientSoc} client room: #{@clientRooms} Client Name #{@clientName}"
     msg="#{@clientName[@clientSoc[client]]} has joined this chatroom"
-    broadcastMessage(msg, client)
+    broadcastMessage(room_ref, msg, client)
     puts "log: Welcome message sent \n"
   end
 
-  def broadcastMessage(str, client)
+  def broadcastMessage(room_ref, str, client)
+  #@chatRooms.each do | key, value |
+  client.puts "CHAT:#{room_ref}\n"
   client.puts str
   end
 
   def sendJoinReqMsg(join_details, client)
-    chatRoom(join_details[0], client)
+    room_ref=chatRoom(join_details[0], client)
     client.puts "JOINED_CHATROOM:#{join_details[0]}\nSERVER_IP:#{@host}\nPORT:#{@port}\nROOM_REF:#{@roomName.key(join_details[0])}\nJOIN_ID:#{@clientName.key(join_details[3])}\n"
     puts "log: join request message sent to client"
+    welcomeMessage(room_ref, client) #Send a welcome message to the client
   end
   
   def servJoinReq(input,client)
@@ -116,7 +120,7 @@ class Server
           puts "log: Calling sendJoinReqMsg"
           sendJoinReqMsg(join_details, client)
         end
-  end
+    end
 
   def raiseError(id, client)
     if id==0
@@ -158,8 +162,9 @@ class Server
       puts "************************************************"
       @clientRooms[client] -= [leave_details[0]]
       @chatRooms[leave_details[0]] -= [client]
+      room_ref=leave_details[0]
       msg="#{@clientName[@clientSoc[client]]} has left this chatroom"
-      broadcastMessage(msg, client)
+      broadcastMessage(room_ref, msg, client)
       puts "log: new value of @clientRooms: #{@clientRooms} \n@chatRooms: #{@chatRooms}"
   end
   
@@ -188,7 +193,6 @@ class Server
          @retryJoinReqFlag=0
          servJoinReq(input, client)
       end
-      welcomeMessage(client) #Send a welcome message to the client
     elsif input[0,14]=="LEAVE_CHATROOM"
       leaveChatroomMsg(input, client)
     else
@@ -217,7 +221,7 @@ class Server
     while true
       @threadPool.process {
       client=@serverSocket.accept 
-      @descriptors.push(client) #Pushes the name of the client
+      @descriptors.push(client) #Pushes the client socket
       welcome(client)
       new_Connection(client)
       }

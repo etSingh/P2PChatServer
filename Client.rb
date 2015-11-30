@@ -70,11 +70,15 @@ def records
 end
 
 def recvWelcomeMsg
+	puts "*****************Welcome Notification****************\n"
 	puts @s.gets
+	puts @s.gets
+	puts "*****************************************************\n"
 end
 
 def recvLeaveMsg
 	puts "*****************Leaving Notification****************\n"
+	puts @s.gets
 	puts @s.gets
 	puts @s.gets
 	puts "*****************************************************\n"
@@ -89,7 +93,7 @@ def menu
 	puts "***************************************************\n"
 	ch=gets.to_i
 	if ch==1
-		chatroom
+		postMsg
 	elsif ch==2
 		leaveChatroom
 	elsif ch==3
@@ -102,12 +106,31 @@ def menu
 	end
 end
 
-def chatroom
+def info
+	puts "You are presently connected to the following chatrooms:- "
+	@room_ref.each_value { |value| puts "#{value} " }
+end
+
+def postMsg
+	info
+	puts "Enter the name of the chatroom you would like to post a message to"
+	input=gets.chomp
+	if @room_ref.has_value?(input)
+		puts "Enter your message"
+		msg=gets
+		@s.puts "CHAT:#{@room_ref.key(input)}\nJOIN_ID:#{join_ID}\nCLIENT_NAME:#{clientName}\nMESSAGE:msg\n"
+	    puts "****************Message sent***************\n"
+	    puts "CHAT:#{@room_ref.key(input)}\nJOIN_ID:#{join_ID}\nCLIENT_NAME:#{clientName}\nMESSAGE:msg\n"
+	    puts "*******************************************\n"
+	else
+		puts "Incorrect Input, try again.."
+		postMsg
+    end
+	menu
 end
 
 def leaveChatroom
-	puts "You are presently connected to the following chatrooms:- "
-	@room_ref.each_value { |value| puts "#{value} " }
+	info
 	puts "Enter the name of the chatroom you would like to leave"
 	input=gets.chomp
 	if @room_ref.has_value?(input)
