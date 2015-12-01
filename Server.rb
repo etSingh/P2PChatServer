@@ -102,16 +102,26 @@ class Server
     puts "log: join request message sent to client"
     welcomeMessage(room_ref, client) #Send a welcome message to the client
   end
-
+  
+  def removeClientEntry(leave_details, client)
+    @clientRooms[client] -= [leave_details[0]]
+    @chatRooms[leave_details[0]] -= [client]
+  end
+  
+  def sendleaveNotification(room_ref, str, client)
+      puts "inside leave sendleaveNotification\n"
+      client.puts "CHAT:#{room_ref}\nCLIENT_NAME:#{@clientName[@clientSoc[client]]}\nMESSAGE:#{str}\n"
+  end
+  
   def sendleaveMsg(leave_details, client)
       client.puts "LEFT_CHATROOM:#{leave_details[0]}\nJOIN_ID:#{leave_details[1]}"
       puts "****************leave message sent**************"
       puts "LEFT_CHATROOM:#{leave_details[0]}\nJOIN_ID:#{leave_details[1]}"
       puts "************************************************"
-      @clientRooms[client] -= [leave_details[0]]
-      @chatRooms[leave_details[0]] -= [client]
+      removeClientEntry(leave_details, client)
       room_ref=leave_details[0]
       msg="#{@clientName[@clientSoc[client]]} has left this chatroom\n"
+      sendleaveNotification(room_ref, msg, client)
       broadcastMessage(room_ref, msg, client)
       puts "log: new value of @clientRooms: #{@clientRooms} \n@chatRooms: #{@chatRooms}"
   end

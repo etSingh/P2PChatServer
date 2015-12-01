@@ -87,7 +87,11 @@ def recvLeaveMsg
 end
 
 def getmsg
-	puts "You are now in chatroom"
+	#puts "You are now in chatroom"
+	puts @s.gets
+	puts @s.gets
+	puts @s.gets
+	puts @s.gets
 end
 
 def menu
@@ -164,7 +168,7 @@ def baseTestMsg
 		if l[0,4]=="HELO"
 			puts "**************Hello Message**************\n"
 			i=0
-			while(i<=3)
+			while(i<=4)
 				lineFromServer=@s.gets
 			 	puts "#{lineFromServer}"
 			 	i+=1
