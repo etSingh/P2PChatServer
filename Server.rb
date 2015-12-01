@@ -163,6 +163,7 @@ class Server
   
   def handleChatMsg(input, client)
    i=1
+   puts "Inside handle chat message"
    room_ref=input.slice((input.index(':')+1)..input.length).to_i
    while i<=3
       input=client.gets
@@ -171,6 +172,7 @@ class Server
       end
       i+=1
     end
+    puts "Sending chat message where msg= #{msg}"
     broadcastMessage(room_ref, msg, client)
   end
   def raiseError(id, client)
