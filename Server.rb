@@ -13,7 +13,7 @@ class Server
     @descriptors=Array.new #Stores all client sockets and the server socket
     @descriptors.push(@serverSocket)
     @clientSoc=Hash.new # client socket as key and join_ID as value
-    @threadPool=Thread.pool(4) #There can be a maximum of 4 threads at a time
+    @threadPool=Thread.pool(10) #There can be a maximum of 4 threads at a time
     @retryJoinReqFlag=0
     @chatRooms=Hash.new([].freeze) # Stores the chatname hash value as key, and an array of the client sockets who are in that room 
     @roomName=Hash.new # room_ref as key, chatroom name as value
@@ -94,12 +94,15 @@ class Server
       puts "log: Printing Cli\n #{cli}"
       cli.puts "CHAT:#{room_ref}\nCLIENT_NAME:#{@clientName[@clientSoc[client]]}\nMESSAGE:#{str}\n"
     end
+    puts "******************Broadcast Message********************"
+    puts "CHAT:#{room_ref}\nCLIENT_NAME:#{@clientName[@clientSoc[client]]}\nMESSAGE:#{str}\n"
+    puts "*******************************************************" 
   end
 
   def sendJoinReqMsg(join_details, client)
     room_ref=chatRoom(join_details[0], client)
     client.puts "JOINED_CHATROOM:#{join_details[0]}\nSERVER_IP:#{@host}\nPORT:#{@port}\nROOM_REF:#{@roomName.key(join_details[0])}\nJOIN_ID:#{@clientName.key(join_details[3])}\n"
-    puts "log: join request message sent to client"
+    puts "log: Join request message sent to client"
     welcomeMessage(room_ref, client) #Send a welcome message to the client
   end
   
@@ -109,7 +112,6 @@ class Server
   end
   
   def sendleaveNotification(room_ref, str, client)
-      puts "inside leave sendleaveNotification\n"
       client.puts "CHAT:#{room_ref}\nCLIENT_NAME:#{@clientName[@clientSoc[client]]}\nMESSAGE:#{str}\n"
   end
   
@@ -209,6 +211,7 @@ class Server
   end
   
   def handle_Connection(input, client)
+    
     if input[0,4]=="HELO"
       client.puts "#{input}\nIP:#{@host}\nPort:#{@port}\nStudentID:#{@StudentID}\n"
       puts "log: sending HELO message"
