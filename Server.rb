@@ -181,11 +181,11 @@ class Server
 
   def checkname(input, client) #checks if username is available, returns 1 if it's already taken, 0 if it's available
     flag=0
-      @clientName.each do |key, name| #If username is already taken, flag is set to 1
-        if name==input              
-          flag=1
-        end
-      end
+      #@clientName.each do |key, name| #If username is already taken, flag is set to 1
+        #if name==input              
+          #flag=1
+        #end
+      #end
       if flag==0  #if username is available, it is pushed into the hash @chatName
         clientID=hashCode(input)
         @clientName[clientID]=input # Stores the Client name with it's key as the join ID
