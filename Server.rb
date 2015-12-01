@@ -220,6 +220,7 @@ class Server
          @retryJoinReqFlag=0
          servJoinReq(input, client)
       end
+      puts "In handle_Connection"
     elsif input[0,14]=="LEAVE_CHATROOM"
       leaveChatroomMsg(input, client)
     elsif input[0,5]=="CHAT:"
