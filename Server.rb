@@ -82,7 +82,7 @@ class Server
   def welcomeMessage(room_ref, client)
     #puts "#{@descriptors}"
     #puts "Inside welcomeMessage:  client: #{client} Client socket #{@clientSoc} client room: #{@clientRooms} Client Name #{@clientName}"
-    msg="#{@clientName[@clientSoc[client]]} has joined this chatroom\n"
+    msg="#{@clientName[@clientSoc[client]]} has joined this chatroom.\n"
     broadcastMessage(room_ref, msg, client)
     puts "log: Welcome message sent \n"
   end
