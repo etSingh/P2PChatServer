@@ -73,6 +73,7 @@ def recvWelcomeMsg
 	puts "*****************Welcome Notification****************\n"
 	puts @s.gets
 	puts @s.gets
+	puts @s.gets
 	puts "*****************************************************\n"
 end
 
@@ -82,6 +83,11 @@ def recvLeaveMsg
 	puts @s.gets
 	puts @s.gets
 	puts "*****************************************************\n"
+    getmsg #might need this, depends on the protocol
+end
+
+def getmsg
+	puts "You are now in chatroom"
 end
 
 def menu

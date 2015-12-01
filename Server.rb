@@ -82,15 +82,18 @@ class Server
   def welcomeMessage(room_ref, client)
     #puts "#{@descriptors}"
     #puts "Inside welcomeMessage:  client: #{client} Client socket #{@clientSoc} client room: #{@clientRooms} Client Name #{@clientName}"
-    msg="#{@clientName[@clientSoc[client]]} has joined this chatroom"
+    msg="#{@clientName[@clientSoc[client]]} has joined this chatroom\n"
     broadcastMessage(room_ref, msg, client)
     puts "log: Welcome message sent \n"
   end
 
   def broadcastMessage(room_ref, str, client)
-  #@chatRooms.each do | key, value |
-  client.puts "CHAT:#{room_ref}\n"
-  client.puts str
+    puts "log: Inside broadcast message\n"
+    puts "Printing @chatRooms #{@chatRooms}\n"
+    @chatRooms[room_ref].each do | cli |
+      puts "log: Printing Cli\n #{cli}"
+      cli.puts "CHAT:#{room_ref}\nCLIENT_NAME:#{@clientName[@clientSoc[client]]}\nMESSAGE:#{str}\n"
+    end
   end
 
   def sendJoinReqMsg(join_details, client)
@@ -98,6 +101,19 @@ class Server
     client.puts "JOINED_CHATROOM:#{join_details[0]}\nSERVER_IP:#{@host}\nPORT:#{@port}\nROOM_REF:#{@roomName.key(join_details[0])}\nJOIN_ID:#{@clientName.key(join_details[3])}\n"
     puts "log: join request message sent to client"
     welcomeMessage(room_ref, client) #Send a welcome message to the client
+  end
+
+  def sendleaveMsg(leave_details, client)
+      client.puts "LEFT_CHATROOM:#{leave_details[0]}\nJOIN_ID:#{leave_details[1]}"
+      puts "****************leave message sent**************"
+      puts "LEFT_CHATROOM:#{leave_details[0]}\nJOIN_ID:#{leave_details[1]}"
+      puts "************************************************"
+      @clientRooms[client] -= [leave_details[0]]
+      @chatRooms[leave_details[0]] -= [client]
+      room_ref=leave_details[0]
+      msg="#{@clientName[@clientSoc[client]]} has left this chatroom\n"
+      broadcastMessage(room_ref, msg, client)
+      puts "log: new value of @clientRooms: #{@clientRooms} \n@chatRooms: #{@chatRooms}"
   end
   
   def servJoinReq(input,client)
@@ -117,11 +133,36 @@ class Server
       end
       
         if @retryJoinReqFlag==0
-          puts "log: Calling sendJoinReqMsg"
+          puts "log: Calling sendJoinReqMsg again"
           sendJoinReqMsg(join_details, client)
         end
     end
-
+  
+  def leaveChatroomMsg(input, client)
+    i=1
+    leave_details=Array.new
+    leave_details[0]=input.slice((input.index(':')+1)..input.length).to_i
+    while i<=2
+      input=client.gets
+      leave_details[i]=input.slice((input.index(':')+1)..input.length).to_i
+      i+=1
+    end
+    puts "log: leave_details:- #{leave_details}"
+    sendleaveMsg(leave_details, client)
+  end
+  
+  def handleChatMsg(input, client)
+   i=1
+   room_ref=input.slice((input.index(':')+1)..input.length).to_i
+   while i<=3
+      input=client.gets
+      if i==3
+        msg=input.slice((input.index(':')+1)..input.length).chomp
+      end
+      i+=1
+    end
+    broadcastMessage(room_ref, msg, client)
+  end
   def raiseError(id, client)
     if id==0
       client.puts "ERROR_CODE:#{id}\nERROR_DESCRIPTION:Username already taken!! "
@@ -155,32 +196,6 @@ class Server
       end
   end
   
-  def sendleaveMsg(leave_details, client)
-      client.puts "LEFT_CHATROOM:#{leave_details[0]}\nJOIN_ID:#{leave_details[1]}"
-      puts "****************leave message sent**************"
-      puts "LEFT_CHATROOM:#{leave_details[0]}\nJOIN_ID:#{leave_details[1]}"
-      puts "************************************************"
-      @clientRooms[client] -= [leave_details[0]]
-      @chatRooms[leave_details[0]] -= [client]
-      room_ref=leave_details[0]
-      msg="#{@clientName[@clientSoc[client]]} has left this chatroom"
-      broadcastMessage(room_ref, msg, client)
-      puts "log: new value of @clientRooms: #{@clientRooms} \n@chatRooms: #{@chatRooms}"
-  end
-  
-  def leaveChatroomMsg(input, client)
-    i=1
-    leave_details=Array.new
-    leave_details[0]=input.slice((input.index(':')+1)..input.length).to_i
-    while i<=2
-      input=client.gets
-      leave_details[i]=input.slice((input.index(':')+1)..input.length).to_i
-      i+=1
-    end
-    puts "log: leave_details:- #{leave_details}"
-    sendleaveMsg(leave_details, client)
-  end
-
   def handle_Connection(input, client)
     if input[0,4]=="HELO"
       client.puts "#{input}\nIP:#{@host}\nPort:#{@port}\nStudentID:#{@StudentID}\n"
@@ -195,6 +210,8 @@ class Server
       end
     elsif input[0,14]=="LEAVE_CHATROOM"
       leaveChatroomMsg(input, client)
+    elsif input[0,5]=="CHAT:"
+      handleChatMsg(input, client)
     else
       #client.puts "Invalid Input \n"
       puts "log: Invalid message"
