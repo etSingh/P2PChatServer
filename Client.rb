@@ -73,6 +73,7 @@ def recvWelcomeMsg
 	puts "*****************Welcome Notification****************\n"
 	puts @s.gets
 	puts @s.gets
+	puts @s.gets.chomp
 	puts @s.gets
 	puts "*****************************************************\n"
 end
@@ -80,8 +81,7 @@ end
 def recvLeaveMsg
 	puts "*****************Leaving Notification****************\n"
 	puts @s.gets
-	puts @s.gets
-	puts @s.gets
+	puts @s.gets.chomp
 	puts "*****************************************************\n"
     getmsg #might need this, depends on the protocol
 end
@@ -90,7 +90,7 @@ def getmsg
 	#puts "You are now in chatroom"
 	puts @s.gets
 	puts @s.gets
-	puts @s.gets
+	puts @s.gets.chomp
 	puts @s.gets
 end
 
@@ -168,7 +168,7 @@ def baseTestMsg
 		if l[0,4]=="HELO"
 			puts "**************Hello Message**************\n"
 			i=0
-			while(i<=4)
+			while(i<=3)
 				lineFromServer=@s.gets
 			 	puts "#{lineFromServer}"
 			 	i+=1
