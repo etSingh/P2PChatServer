@@ -26,7 +26,7 @@ class Server
   end
   
   def chatRoom(chatRoomName, client)
-    puts "log: Inside chatRoom method"
+   # puts "log: Inside chatRoom method"
     flag=0
     room_ref=hashCode(chatRoomName)
     puts "log: room_ref= #{room_ref}"
@@ -42,11 +42,11 @@ class Server
     @chatRooms[room_ref] += [client]
     end
     @clientRooms[client] += [room_ref]
-    puts "log:client added"
-    puts "log:chatroom #{chatRoomName} created"
-    puts "log:printing @chatRooms #{@chatRooms}"
-    puts "log:printing @roomName #{@roomName}"
-    puts "log:printing @clientRooms #{@clientRooms}"
+   # puts "log:client added"
+   # puts "log:chatroom #{chatRoomName} created"
+   # puts "log:printing @chatRooms #{@chatRooms}"
+   # puts "log:printing @roomName #{@roomName}"
+   # puts "log:printing @clientRooms #{@clientRooms}"
     return room_ref
   end
 
@@ -89,7 +89,7 @@ class Server
 
   def broadcastMessage(room_ref, str, client)
     puts "log: Inside broadcast message\n"
-    puts "Printing @chatRooms #{@chatRooms}\n"
+   # puts "Printing @chatRooms #{@chatRooms}\n"
     @chatRooms[room_ref].each do | cli |
       cli.puts "CHAT:#{room_ref}\nCLIENT_NAME:#{@clientName[@clientSoc[client]]}\nMESSAGE:#{str}\n"
     end
@@ -124,7 +124,7 @@ class Server
       msg="#{@clientName[@clientSoc[client]]} has left this chatroom\n"
       sendleaveNotification(room_ref, msg, client)
       broadcastMessage(room_ref, msg, client)
-      puts "log: new value of @clientRooms: #{@clientRooms} \n@chatRooms: #{@chatRooms}"
+     # puts "log: new value of @clientRooms: #{@clientRooms} \n@chatRooms: #{@chatRooms}"
   end
   
   def servJoinReq(input,client)
@@ -144,7 +144,7 @@ class Server
       end
       
         if @retryJoinReqFlag==0
-          puts "log: Calling sendJoinReqMsg again"
+         # puts "log: Calling sendJoinReqMsg again"
           sendJoinReqMsg(join_details, client)
         end
     end
@@ -158,7 +158,7 @@ class Server
       leave_details[i]=input.slice((input.index(':')+1)..input.length).to_i
       i+=1
     end
-    puts "log: leave_details:- #{leave_details}"
+   # puts "log: leave_details:- #{leave_details}"
     sendleaveMsg(leave_details, client)
   end
   
@@ -173,8 +173,9 @@ class Server
       end
       i+=1
     end
-    puts "Sending chat message where msg= #{msg}"
-    broadcastMessage(room_ref, msg, client)
+   # puts "Sending chat message where msg= #{msg}"
+   client.gets
+   broadcastMessage(room_ref, msg, client)
   end
   def raiseError(id, client)
     if id==0
@@ -238,26 +239,30 @@ class Server
      puts "Inside handledisconnectmessage"
      input=client.gets
      port=input.slice((input.index(':')+1)..input.length).to_i
+     input=client.gets
      cliName=input.slice((input.index(':')+1)..input.length)
      erase(client)
   end
 
   def erase(client)
+    puts "log: Inside erase"
     msg="#{@clientName[@clientSoc[client]]} has disconnected\n"
+    puts "#{msg}"
     @clientRooms[client].each do | room |
-      broadcastMessage(room_ref, msg, client)
+      broadcastMessage(room, msg, client)
       @chatRooms[room] -= [client]
     end
     @clientRooms.delete(client)
     @descriptors.pop(client)
     @clientName.delete(@clientSoc[client])
     @clientSoc.delete(client)
+    puts "client #{client} disconnected"
+    client.close
   end
 
   def terminate #terminates all socket connections, terminating clients first
     @descriptors.each do |socket|  
       if socket!= @serverSocket
-         #socket.puts "Goodbye"
          socket.close
       end
     end
