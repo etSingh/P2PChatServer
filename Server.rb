@@ -170,7 +170,7 @@ class Server
    while i<=3
       input=client.gets
       if i==3
-        msg=input.slice((input.index(':')+1)..input.length).chomp
+        msg=input.slice((input.index(':')+1)..input.length)
       end
       i+=1
     end
@@ -228,10 +228,31 @@ class Server
       leaveChatroomMsg(input, client)
     elsif input[0,5]=="CHAT:"
       handleChatMsg(input, client)
+    elsif input[0,11]=="DISCONNECT:"
+      handleDisconnectMsg(client)
     else
-      #client.puts "Invalid Input \n"
       puts "log: Invalid message"
     end
+  end
+
+  def handleDisconnectMsg(client)
+     puts "Inside handledisconnectmessage"
+     input=client.gets
+     port=input.slice((input.index(':')+1)..input.length).to_i
+     cliName=input.slice((input.index(':')+1)..input.length)
+     erase(client)
+  end
+
+  def erase(client)
+    msg="#{@clientName[@clientSoc[client]]} has disconnected\n"
+    @clientRooms[client].each do | room |
+      broadcastMessage(room_ref, msg, client)
+      @chatRooms[room] -= [client]
+    end
+    @clientRooms.delete(client)
+    @descriptors.pop(client)
+    @clientName.delete(@clientSoc[client])
+    @clientSoc.delete(client)
   end
 
   def terminate #terminates all socket connections, terminating clients first
