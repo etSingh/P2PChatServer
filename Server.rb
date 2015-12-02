@@ -91,7 +91,6 @@ class Server
     puts "log: Inside broadcast message\n"
     puts "Printing @chatRooms #{@chatRooms}\n"
     @chatRooms[room_ref].each do | cli |
-      puts "log: Printing Cli\n #{cli}"
       cli.puts "CHAT:#{room_ref}\nCLIENT_NAME:#{@clientName[@clientSoc[client]]}\nMESSAGE:#{str}\n"
     end
     puts "******************Broadcast Message********************"
