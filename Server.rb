@@ -29,7 +29,7 @@ class Server
    # puts "log: Inside chatRoom method"
     flag=0
     room_ref=hashCode(chatRoomName)
-    puts "log: room_ref= #{room_ref}"
+    #puts "log: room_ref= #{room_ref}"
     @chatRooms.each do |key, value| #Checks to see if chatroom is already present, if it is, then adds the client
       if key==room_ref
         flag=1
@@ -38,7 +38,7 @@ class Server
     end
     if flag==0
     @roomName[room_ref]=chatRoomName
-    puts "log: adding client in #{chatRoomName}"
+    #puts "log: adding client in #{chatRoomName}"
     @chatRooms[room_ref] += [client]
     end
     @clientRooms[client] += [room_ref]
@@ -67,7 +67,6 @@ class Server
   
   def initiateCheckname(username, client)
     reply=checkname(username, client) #Gets 1 from checkname if username is already taken, else gets 0
-    puts "log: got reply #{reply}"
     if reply==1 
       input=client.gets # If the username is already taken, get response from client if it wants to retry or not
           if input[0,5]=="Close" # If the answer recieved is close, then close the connection
@@ -80,16 +79,13 @@ class Server
   end
   
   def welcomeMessage(room_ref, client)
-    #puts "#{@descriptors}"
-    #puts "Inside welcomeMessage:  client: #{client} Client socket #{@clientSoc} client room: #{@clientRooms} Client Name #{@clientName}"
     msg="#{@clientName[@clientSoc[client]]} has joined this chatroom.\n"
     broadcastMessage(room_ref, msg, client)
     puts "log: Welcome message sent \n"
   end
 
   def broadcastMessage(room_ref, str, client)
-    puts "log: Inside broadcast message\n"
-   # puts "Printing @chatRooms #{@chatRooms}\n"
+    #puts "log: Inside broadcast message\n"
     @chatRooms[room_ref].each do | cli |
       cli.puts "CHAT:#{room_ref}\nCLIENT_NAME:#{@clientName[@clientSoc[client]]}\nMESSAGE:#{str}\n"
     end
@@ -164,7 +160,7 @@ class Server
   
   def handleChatMsg(input, client)
    i=1
-   puts "Inside handle chat message"
+   #puts "Inside handle chat message"
    room_ref=input.slice((input.index(':')+1)..input.length).to_i
    while i<=3
       input=client.gets
@@ -194,8 +190,8 @@ class Server
         clientID=hashCode(input)
         @clientName[clientID]=input # Stores the Client name with it's key as the join ID
         @clientSoc[client]=clientID
-        puts "log: Username #{input} created for client #{@clientSoc[client]}"
-        puts "log: Client socket= #{@clientSoc}"
+        #puts "log: Username #{input} created for client #{@clientSoc[client]}"
+        #puts "log: Client socket= #{@clientSoc}"
       else
         raiseError(0, client)
       end
