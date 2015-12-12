@@ -6,7 +6,9 @@ class Chatroom
 	
   attr_accessor :clientSoc, :chatRooms, :roomName, :clientRooms, :clientName 
   
-  def initialize 
+  def initialize(host, port)
+      @host=host
+      @port=port 
 	    @clientSoc=Hash.new # client socket as key and join_ID as value
       @chatRooms=Hash.new([].freeze) # Stores the chatname hash value as key, and an array of the client sockets who are in that room 
       @roomName=Hash.new # room_ref as key, chatroom name as value

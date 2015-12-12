@@ -10,7 +10,7 @@ class Server
   def initialize(host,port)
     @host=host
     @port=port
-    @handleChatrooms=Chatroom.new
+    @handleChatrooms=Chatroom.new(@host, @port)
     @serverSocket= TCPServer.open(@host,@port)
     @descriptors=Array.new #Stores all client sockets and the server socket
     @descriptors.push(@serverSocket)
