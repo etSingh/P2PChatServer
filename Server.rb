@@ -2,7 +2,6 @@
 $LOAD_PATH << '.'
 require 'socket'
 require "lib/threadpool.rb"
-require "src/hashIt.rb"
 require "src/chatroom.rb"
 
 class Server
