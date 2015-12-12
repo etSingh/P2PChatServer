@@ -1,10 +1,22 @@
-class chatroom
-	def initialize 
-	end
+
+require_relative "./hashIt.rb"
+require_relative "./messaging.rb"
+
+class Chatroom
+	
+  attr_accessor :clientSoc, :chatRooms, :roomName, :clientRooms, :clientName 
+  
+  def initialize 
+	    @clientSoc=Hash.new # client socket as key and join_ID as value
+      @chatRooms=Hash.new([].freeze) # Stores the chatname hash value as key, and an array of the client sockets who are in that room 
+      @roomName=Hash.new # room_ref as key, chatroom name as value
+      @clientRooms=Hash.new([].freeze) #client as key, array of connected room_ref as value
+      @clientName=Hash.new # Stores the name of all the clients, join_ID as key, clientname as value 
+  end
 
 	def chatRoom(chatRoomName, client)
     flag=0
-    room_ref=hashCode(chatRoomName)
+    room_ref=HashIt.hashCode(chatRoomName)
     @chatRooms.each do |key, value| #Checks to see if chatroom is already present, if it is, then adds the client
       if key==room_ref
         flag=1
@@ -20,12 +32,6 @@ class chatroom
     return room_ref
   end
 
-  def welcomeMessage(room_ref, client)
-    msg="#{@clientName[@clientSoc[client]]} has joined this chatroom.\n"
-    broadcastMessage(room_ref, msg, client)
-    puts "log: Welcome message sent \n"
-  end
-
   def broadcastMessage(room_ref, str, client)
     @chatRooms[room_ref].each do | cli |
       cli.puts "CHAT:#{room_ref}\nCLIENT_NAME:#{@clientName[@clientSoc[client]]}\nMESSAGE:#{str}\n"
@@ -33,13 +39,6 @@ class chatroom
     puts "******************Broadcast Message********************"
     puts "CHAT:#{room_ref}\nCLIENT_NAME:#{@clientName[@clientSoc[client]]}\nMESSAGE:#{str}\n"
     puts "*******************************************************" 
-  end
-
-  def sendJoinReqMsg(join_details, client)
-    room_ref=chatRoom(join_details[0], client)
-    client.puts "JOINED_CHATROOM:#{join_details[0]}\nSERVER_IP:#{@host}\nPORT:#{@port}\nROOM_REF:#{@roomName.key(join_details[0])}\nJOIN_ID:#{@clientName.key(join_details[3])}\n"
-    puts "log: Join request message sent to client #{client}"
-    welcomeMessage(room_ref, client) #Send a welcome message to the client
   end
   
   def removeClientEntry(leave_details, client)
@@ -78,8 +77,23 @@ class chatroom
       sendJoinReqMsg(join_details, client)
     end
 
+  def sendJoinReqMsg(join_details, client)
+    room_ref=chatRoom(join_details[0], client)
+    client.puts "JOINED_CHATROOM:#{join_details[0]}\nSERVER_IP:#{@host}\nPORT:#{@port}\nROOM_REF:#{@roomName.key(join_details[0])}\nJOIN_ID:#{@clientName.key(join_details[3])}\n"
+    puts "log: Join request message sent to client #{client}"
+    welcomeMessage(room_ref, client) #Send a welcome message to the client
+  end
+
+  def welcomeMessage(room_ref, client)
+    msg="#{@clientName[@clientSoc[client]]} has joined this chatroom.\n"
+    broadcastMessage(room_ref, msg, client)
+    puts "log: Welcome message sent \n"
+  end
+     
   def saveUserName(input, client) 
-      clientID=hashCode(input)
+      puts "Inside saveUserName"
+      clientID=HashIt.hashCode(input)
+      puts "Called HashIt, recieved clientID in new class"
       @clientName[clientID]=input 
       @clientSoc[client]=clientID
   end
@@ -139,3 +153,4 @@ class chatroom
     puts "client #{client} disconnected"
     client.close
   end
+end
