@@ -1,10 +1,8 @@
 
 require_relative "./hashIt.rb"
-require_relative "./messaging.rb"
 
 class Chatroom
 	
-  attr_accessor :clientSoc, :chatRooms, :roomName, :clientRooms, :clientName 
   
   def initialize(host, port)
       @host=host
