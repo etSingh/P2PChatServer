@@ -2,6 +2,7 @@
 $LOAD_PATH << File.dirname(__FILE__)
 require 'socket'
 require "lib/threadpool.rb"
+require "src/HashIt.rb"
 
 class Server
 
@@ -26,7 +27,7 @@ class Server
   
   def chatRoom(chatRoomName, client)
     flag=0
-    room_ref=hashCode(chatRoomName)
+    room_ref=HashIt.hashcode(chatRoomName)
     @chatRooms.each do |key, value| #Checks to see if chatroom is already present, if it is, then adds the client
       if key==room_ref
         flag=1
@@ -40,14 +41,6 @@ class Server
     @clientRooms[client] += [room_ref]
     puts "log:client #{client} added to chatroom #{chatRoomName} Ref:#{room_ref}"
     return room_ref
-  end
-
-  def hashCode(str) #This function generates a hash code of the string it receives 
-    hash=0
-    str.each_byte do |i| 
-      hash=hash*31 + i 
-    end
-    return hash     
   end
   
   def welcomeMessage(room_ref, client)
@@ -109,7 +102,9 @@ class Server
     end
 
   def saveUserName(input, client) 
-      clientID=hashCode(input)
+      puts "Inside saveUserName"
+      clientID=HashIt.hashcode(input)
+      puts "Called HashIt, recieved clientID"
       @clientName[clientID]=input 
       @clientSoc[client]=clientID
   end
