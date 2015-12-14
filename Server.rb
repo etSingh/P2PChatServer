@@ -95,7 +95,7 @@ if __FILE__ == $0
       $options[:ip]=v
     end
 
-    opts.on("--id [ID]", Integer, "Specifies the id of the node on bootstrap") do |v|
+    opts.on("--id [ID]", Integer, "Specifies the id of the node on bootstrap, mandatory to give after --bootstrap option") do |v|
       $options[:id] = v
     end
 
@@ -103,7 +103,22 @@ if __FILE__ == $0
       puts opts
       exit
     end
-  end.parse! #end of optparse
+  end #end of optparse
+
+  begin
+    optparse.parse!
+    mandatory = [:ip, :id]
+    missing = mandatory.select{ |v| $options[v].nil? }
+    unless missing.empty?
+      puts "Missing options: --boot [ID] or --bootstrap IP_Address --id [ID]"
+      puts optparse
+      exit
+    end
+  rescue OptionParser::InvalidOption
+    puts $!.to_s                                                           
+    puts optparse                                                          
+    exit                                                                   
+  end 
 
   puts "Initialized with options- #{$options}"
   server = Server.new(ARGV[0]||"localhost", ARGV[1]||8767)
