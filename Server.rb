@@ -1,14 +1,16 @@
 # A skeleton TCPserver
 $LOAD_PATH << '.'
 require 'socket'
+require 'optparse'
 require "lib/threadpool.rb"
 require "src/chatroom.rb"
 
 class Server
 
-  def initialize(host,port)
+  def initialize(host, port)
     @host=host
     @port=port
+    @id=$options[:id]
     @handleChatrooms=Chatroom.new(@host, @port)
     @serverSocket= TCPServer.open(@host,@port)
     @descriptors=Array.new #Stores all client sockets and the server socket
@@ -19,12 +21,6 @@ class Server
   
   def welcome(client)
     puts "log: Connection from client #{client}"
-  end
-  
-  def raiseError(id, client)
-    if id==0
-      client.puts "ERROR_CODE:#{id}\nERROR_DESCRIPTION:Username already taken!! "
-    end
   end
   
   def new_Connection(client)
@@ -70,7 +66,7 @@ class Server
 
   
   def run
-    puts "Server running on Port #{@port} ..."
+    puts "Server is #{@nodeType} running on Port #{@port} with id #{@id}..."
     puts "Listening for connections \n"
     while true
       @threadPool.process {
@@ -83,6 +79,33 @@ class Server
   end
 end
 
-server = Server.new(ARGV[0]||"Localhost",ARGV[1]||5000)
-server.run()
+if __FILE__ == $0
+  #cmd arguments
+  $options = {}
 
+  optparse = OptionParser.new do|opts|
+    opts.banner = "Usage: Server.rb [host] [Port] [options]"
+
+    opts.on("-b", "--boot [ID]", Integer,"Creates first node in the P2P Network with provided id") do |v|
+      $options[:id]=v
+      $options[:ip]=""
+    end
+    
+    opts.on("-s", "--bootstrap IP_Address", "Attaches node to gateway node having the specified IP address") do |v|
+      $options[:ip]=v
+    end
+
+    opts.on("--id [ID]", Integer, "Specifies the id of the node on bootstrap") do |v|
+      $options[:id] = v
+    end
+
+    opts.on_tail("-h", "--help", "Displays this message") do 
+      puts opts
+      exit
+    end
+  end.parse! #end of optparse
+
+  puts "Initialized with options- #{$options}"
+  server = Server.new(ARGV[0]||"localhost", ARGV[1]||8767)
+  server.run()
+end
