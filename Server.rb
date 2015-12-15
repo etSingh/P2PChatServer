@@ -19,7 +19,6 @@ class Server
     #@descriptors=Array.new #Stores all client sockets and the server socket
     #@descriptors.push(@serverSocket)
     @routing_table=Hash.new
-    @msgSendPool=Thread.pool(3)
     @msgRecvPool=Thread.pool(10)
     @StudentID=ARGV[2]||152
     menu
@@ -131,24 +130,23 @@ class Server
   end
   
   def menu
-      
-      loop {
-      @msgSendPool.process {
-                      puts "Press 1 to send a Chat message\n"
-                      puts "Press 2 to retrive a Chat\n"
-                      puts "Press 3 to leave the Network\n"
-                      s=$stdin.gets.to_i
-                      if s==1
-                        chat
-                      elsif s==2
-                        retrive
-                      elsif s==3
-                        leave
-                      else
-                        puts "Wrong choice darlin', try again\n"
-                      end
-                  }
-            }
+      Thread.new do
+        loop {
+          puts "Press 1 to send a Chat message\n"
+          puts "Press 2 to retrive a Chat\n"
+          puts "Press 3 to leave the Network\n"
+          s=$stdin.gets.to_i
+          if s==1
+            chat
+          elsif s==2
+            retrive
+          elsif s==3
+            leave
+          else
+            puts "Wrong choice darlin', try again\n"
+          end
+          }
+      end
   end
   
   def chat
