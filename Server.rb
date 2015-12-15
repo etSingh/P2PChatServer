@@ -118,6 +118,7 @@ class Server
   end
 
   def handleJoinNetwork(attributes)
+    puts "Inside handleJoinNetwork"
     @routing_table += [{node_id: attributes.fetch("node_id"), ip_address: attributes.fetch("ip_address")}]
     puts "Printing routing table"
     puts @routing_table
