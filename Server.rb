@@ -74,7 +74,9 @@ class Server
     else
       puts "Sending JOINING_NETWORK message to Gateway\n"
       sendJoinNetwork
-      listen
+      message, _ = @udp_node.recvfrom(1024)
+      puts "Got input #{message}"
+      #listen
     end
   end
 
@@ -154,7 +156,6 @@ class Server
     puts "Listening for messages \n"
     while true
       @threadPool.process {
-      #puts "Still Waiting"
       message, _ = @udp_node.recvfrom(1024)
       puts "Got input"
       attributes=parseMsg(message)
