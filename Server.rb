@@ -130,7 +130,7 @@ class Server
                     type:"ROUTING_INFO", 
                     gateway_id: $options[:id], 
                     node_id: attributes.fetch("node_id"), 
-                    ip_address: attributes.fetch("ip_address")
+                    ip_address: attributes.fetch("ip_address"),
                     route_table: @route_table.values
                   }
     
