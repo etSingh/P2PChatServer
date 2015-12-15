@@ -2,6 +2,7 @@
 $LOAD_PATH << '.'
 require 'socket'
 require 'optparse'
+require 'json'
 require "lib/threadpool.rb"
 require "src/chatroom.rb"
 
@@ -12,7 +13,8 @@ class Server
     @port=port
     @id=$options[:id]
     @handleChatrooms=Chatroom.new(@host, @port)
-    @serverSocket= TCPServer.open(@host,@port)
+    @udp_node= UDPSocket.new
+    @udp_node.bind(@host, @port)
     @descriptors=Array.new #Stores all client sockets and the server socket
     @descriptors.push(@serverSocket)
     @threadPool=Thread.pool(10) #There can be a maximum of 4 threads at a time
@@ -63,17 +65,57 @@ class Server
       abort("Goodbye")
       exit
   end
-
   
-  def run
-    puts "Server is #{@nodeType} running on Port #{@port} with id #{@id}..."
+  def determine
+    if $options[:ip]==""
+      puts "This is the gateway node"
+      listen
+    else
+      puts "Sending JOINING_NETWORK message to Gateway\n"
+      sendJoinNetwork
+      response
+    end
+  end
+
+  def response
+    puts "Waiting for response from gateway"
+    msg, _=@udp_node.recvfrom(1024)
+    puts "got msg #{msg}"
+  end
+
+
+  def sendJoinNetwork
+    joinMsg={ type:"JOINING_NETWORK", node_id:$options[:id], ip_address:@host }
+    sendMsg(joinMsg, $options[:ip])  
+  end
+
+  def sendMsg(msg, ip )
+    puts "sending message #{msg.to_json}"
+    @udp_node.send(msg.to_json, 0, ip, 8767)
+    puts "message sent" 
+  end
+
+  def parseMsg(json)
+    attributes=JSON.parse(json)
+    return attributes
+  end
+
+  def handleMsg(attributes={})
+    msgType = attributes.fetch("type")
+    puts msgType
+    puts attributes
+  end
+ 
+  def listen
+    puts "Gateway is running on Port #{@port} with id #{@id}..."
     puts "Listening for connections \n"
     while true
       @threadPool.process {
-      client=@serverSocket.accept 
-      @descriptors.push(client) #Pushes the client socket
-      welcome(client)
-      new_Connection(client)
+      message, _ = @udp_node.recvfrom(1024)
+      attributes=parseMsg(message)
+      handleMsg(attributes)
+      #welcome(client)
+      #new_Connection(client)
       }
     end
   end
@@ -81,7 +123,7 @@ end
 
 if __FILE__ == $0
   #cmd arguments
-  $options = {}
+  $options = {} #Stores id of the node, and ip of the Gateway, if the node is the gateway, then ip=""
 
   optparse = OptionParser.new do|opts|
     opts.banner = "Usage: Server.rb [host] [Port] [options]"
@@ -122,5 +164,5 @@ if __FILE__ == $0
 
   puts "Initialized with options- #{$options}"
   server = Server.new(ARGV[0]||"localhost", ARGV[1]||8767)
-  server.run()
+  server.determine
 end
