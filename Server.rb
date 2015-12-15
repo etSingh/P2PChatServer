@@ -17,7 +17,7 @@ class Server
     @udp_node.bind(@host, @port)
     #@descriptors=Array.new #Stores all client sockets and the server socket
     #@descriptors.push(@serverSocket)
-    @routing_table=Hash.new([].freeze)
+    @routing_table=Hash.new
     @threadPool=Thread.pool(10) #There can be a maximum of 4 threads at a time
     @StudentID=ARGV[2]||152
   end
@@ -69,12 +69,12 @@ class Server
   
   def determine
     if $options[:ip]==""
-      puts "This is the gateway node"
+      puts "Gateway is running on Port #{@port} with id #{@id}..."
       listen
     else
       puts "Sending JOINING_NETWORK message to Gateway\n"
       sendJoinNetwork
-      response
+      listen
     end
   end
 
@@ -114,14 +114,24 @@ class Server
     if msgType=="JOINING_NETWORK"
       handleJoinNetwork(attributes)
     end
+    if msgType=="ROUTING_INFO"
+      handleRoutInfo(attributes)
+    end
   end
-
+  
+  def handleRouteInfo(attributes)
+    puts "Inside handleRouteInfo"
+    @routing_table[attributes.fetch("node_id")]=attributes.fetch("route_table")
+    puts "Routing table = #{@routing_table}"
+  end
+  
   def handleJoinNetwork(attributes)
     puts "Inside handleJoinNetwork"
-    @routing_table[attributes.fetch("node_id")] += [{node_id: attributes.fetch("node_id"), ip_address: attributes.fetch("ip_address")}]
+    @routing_table[attributes.fetch("node_id")] = [{node_id: attributes.fetch("node_id"), ip_address: attributes.fetch("ip_address")}]
     puts "Printing routing table"
     puts @routing_table
-    buildRouteInfoMsg(attributes)
+    routeInfoMsg=buildRouteInfoMsg(attributes)
+    sendMsg(routeInfoMsg, attributes.fetch("ip_address"))
   end
 
   def buildRouteInfoMsg(attributes)
@@ -133,14 +143,13 @@ class Server
                     ip_address: attributes.fetch("ip_address"),
                     route_table: @routing_table.values
                   }
-    puts "route_table: #{@routing_table.values}"
     puts "routeInfoMsg = #{routeInfoMsg}"
+    return routeInfoMsg
   end
 
  
   def listen
-    puts "Gateway is running on Port #{@port} with id #{@id}..."
-    puts "Listening for connections \n"
+    puts "Listening for messages \n"
     while true
       @threadPool.process {
       message, _ = @udp_node.recvfrom(1024)
