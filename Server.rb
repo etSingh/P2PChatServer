@@ -21,6 +21,7 @@ class Server
     @routing_table=Hash.new
     @msgRecvPool=Thread.pool(10)
     @StudentID=ARGV[2]||152
+    @chatTextTuple=Hash.new
     menu
   end
   
@@ -151,6 +152,7 @@ class Server
   
   def chat
       puts "Inside chat\n"
+
       ping
   end
 
@@ -164,6 +166,8 @@ class Server
 
   def leave
     puts "Inside leave\n"
+    leaveMsg= { type: "LEAVING_NETWORK", node_id: $options[:id]}
+    @routing_table.each_value { |v| sendMsg(leaveMsg, v.fetch("ip_address"))}
   end
 
   def handleJoinNetwork(attributes)
