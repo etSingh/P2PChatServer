@@ -113,13 +113,12 @@ class Server
     puts "Inside handleMsg"
     if msgType=="JOINING_NETWORK"
       handleJoinNetwork(attributes)
-      puts "Calling handleJoinNetwork"
     end
   end
 
   def handleJoinNetwork(attributes)
     puts "Inside handleJoinNetwork"
-    @routing_table += [{node_id: attributes.fetch("node_id"), ip_address: attributes.fetch("ip_address")}]
+    @routing_table[attributes.fetch("node_id")] += [{node_id: attributes.fetch("node_id"), ip_address: attributes.fetch("ip_address")}]
     puts "Printing routing table"
     puts @routing_table
     buildRouteInfoMsg
