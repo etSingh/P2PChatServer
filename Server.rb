@@ -137,7 +137,7 @@ class Server
                       puts "Press 1 to send a Chat message\n"
                       puts "Press 2 to retrive a Chat\n"
                       puts "Press 3 to leave the Network\n"
-                      s=gets.to_i
+                      s=$stdin.gets.to_i
                       if s==1
                         chat
                       elsif s==2
