@@ -131,9 +131,10 @@ class Server
                     gateway_id: $options[:id], 
                     node_id: attributes.fetch("node_id"), 
                     ip_address: attributes.fetch("ip_address"),
-                    route_table: @routing_table.values
                   }
-    puts routeInfoMsg
+    
+    puts "routeInfoMsg = #{routeInfoMsg}"
+    puts @routing_table.values 
   end
 
  
