@@ -124,8 +124,12 @@ class Server
 
   def buildRouteInfoMsg
     puts "Building Route Info Message"
-    routeInfoMsg= { type:"ROUTING_INFO" gateway_id: $options[:id] node_id: attributes.fetch("node_id") 
-                   @routing_table.join(",\n")
+    routeInfoMsg= { 
+                    type:"ROUTING_INFO", 
+                    gateway_id: $options[:id], 
+                    node_id: attributes.fetch("node_id"), 
+                    ip_address: attributes.fetch("ip_address"),
+                    route_table: @routing_table.values
                   }
     puts routeInfoMsg
   end
