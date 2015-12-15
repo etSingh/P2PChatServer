@@ -74,9 +74,7 @@ class Server
     else
       puts "Sending JOINING_NETWORK message to Gateway\n"
       sendJoinNetwork
-      message, _ = @udp_node.recvfrom(1024)
-      puts "Got input #{message}"
-      #listen
+      listen
     end
   end
 
@@ -95,9 +93,7 @@ class Server
 
   def sendMsg(msg, ip)
     puts "sending message #{msg.to_json}"
-    #socket=UDPSocket.new
     @udp_node.send(msg.to_json, 0, ip, @port)
-    #socket.close
     puts "message sent to #{ip}" 
   end
 
@@ -131,7 +127,7 @@ class Server
   
   def handleJoinNetwork(attributes)
     puts "Inside handleJoinNetwork"
-    @routing_table[attributes.fetch("node_id")] = [{node_id: attributes.fetch("node_id"), ip_address: attributes.fetch("ip_address")}]
+    @routing_table[attributes.fetch("node_id")] = {node_id: attributes.fetch("node_id"), ip_address: attributes.fetch("ip_address")}
     puts "Printing routing table"
     puts @routing_table
     routeInfoMsg=buildRouteInfoMsg(attributes)
