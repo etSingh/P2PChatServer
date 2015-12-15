@@ -15,8 +15,9 @@ class Server
     @handleChatrooms=Chatroom.new(@host, @port)
     @udp_node= UDPSocket.new
     @udp_node.bind(@host, @port)
-    @descriptors=Array.new #Stores all client sockets and the server socket
-    @descriptors.push(@serverSocket)
+    #@descriptors=Array.new #Stores all client sockets and the server socket
+    #@descriptors.push(@serverSocket)
+    @routing_table=Hash.new([].freeze)
     @threadPool=Thread.pool(10) #There can be a maximum of 4 threads at a time
     @StudentID=ARGV[2]||152
   end
@@ -81,6 +82,7 @@ class Server
     puts "Waiting for response from gateway"
     msg, _=@udp_node.recvfrom(1024)
     puts "got msg #{msg}"
+    attributes=parseMsg(msg)
   end
 
 
@@ -89,7 +91,7 @@ class Server
     sendMsg(joinMsg, $options[:ip])  
   end
 
-  def sendMsg(msg, ip )
+  def sendMsg(msg, ip)
     puts "sending message #{msg.to_json}"
     @udp_node.send(msg.to_json, 0, ip, 8767)
     puts "message sent" 
@@ -100,11 +102,34 @@ class Server
     return attributes
   end
 
-  def handleMsg(attributes={})
+  def findMsgType(attributes={})
     msgType = attributes.fetch("type")
-    puts msgType
+    puts "Message recieved of type #{msgType}"
     puts attributes
+    return msgType
   end
+
+  def handleMsg(msgType, attributes)
+    if msgType=="JOINING_NETWORK"
+      handleJoinNetwork(attributes)
+    end
+  end
+
+  def handleJoinNetwork(attributes)
+    @routing_table += [{node_id: attributes.fetch("node_id"), ip_address: attributes.fetch("ip_address")}]
+    puts "Printing routing table"
+    puts @routing_table
+    buildRouteInfoMsg
+  end
+
+  def buildRouteInfoMsg
+    puts "Building Route Info Message"
+    routeInfoMsg= { type:"ROUTING_INFO" gateway_id: $options[:id] node_id: attributes.fetch("node_id") 
+                   @routing_table.join(",\n")
+                  }
+    puts routeInfoMsg
+  end
+
  
   def listen
     puts "Gateway is running on Port #{@port} with id #{@id}..."
@@ -113,7 +138,8 @@ class Server
       @threadPool.process {
       message, _ = @udp_node.recvfrom(1024)
       attributes=parseMsg(message)
-      handleMsg(attributes)
+      msgType=findMsgType(attributes)
+      handleMsg(msgType, attributes)
       #welcome(client)
       #new_Connection(client)
       }
