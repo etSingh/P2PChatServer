@@ -110,8 +110,10 @@ class Server
   end
 
   def handleMsg(msgType, attributes)
+    puts "Inside handleMsg"
     if msgType=="JOINING_NETWORK"
       handleJoinNetwork(attributes)
+      puts "Calling handleJoinNetwork"
     end
   end
 
