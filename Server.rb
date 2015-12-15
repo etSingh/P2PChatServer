@@ -121,16 +121,16 @@ class Server
     @routing_table[attributes.fetch("node_id")] += [{node_id: attributes.fetch("node_id"), ip_address: attributes.fetch("ip_address")}]
     puts "Printing routing table"
     puts @routing_table
-    buildRouteInfoMsg
+    buildRouteInfoMsg(attributes)
   end
 
-  def buildRouteInfoMsg
+  def buildRouteInfoMsg(attributes)
     puts "Building Route Info Message"
     routeInfoMsg= { 
                     type:"ROUTING_INFO", 
                     gateway_id: $options[:id], 
                     node_id: attributes.fetch("node_id"), 
-                    ip_address: attributes.fetch("ip_address"),
+                    ip_address: attributes.fetch("ip_address")
                   }
     
     puts "routeInfoMsg = #{routeInfoMsg}"
