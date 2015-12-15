@@ -3,6 +3,7 @@ $LOAD_PATH << '.'
 require 'socket'
 require 'optparse'
 require 'json'
+require  "src/hashIt.rb"
 require "lib/threadpool.rb"
 require "src/chatroom.rb"
 
@@ -18,8 +19,10 @@ class Server
     #@descriptors=Array.new #Stores all client sockets and the server socket
     #@descriptors.push(@serverSocket)
     @routing_table=Hash.new
-    @threadPool=Thread.pool(10) #There can be a maximum of 4 threads at a time
+    @msgSendPool=Thread.pool(3)
+    @msgRecvPool=Thread.pool(10)
     @StudentID=ARGV[2]||152
+    menu
   end
   
   def welcome(client)
@@ -70,6 +73,7 @@ class Server
   def determine
     if $options[:ip]==""
       puts "Gateway is running on Port #{@port} with id #{@id}..."
+      @routing_table[$options[:id]]={ node_id:$options[:id], ip_address:@host} #Gateway will add it's own address in the routing table
       listen
     else
       puts "Sending JOINING_NETWORK message to Gateway\n"
@@ -123,8 +127,48 @@ class Server
     puts "Inside handleRouteInfo"
     @routing_table[attributes.fetch("node_id")]=attributes.fetch("route_table")
     puts "Routing table = #{@routing_table}"
+    menu
   end
   
+  def menu
+      
+      loop {
+      @msgSendPool.process
+                  {
+                      puts "Press 1 to send a Chat message\n"
+                      puts "Press 2 to retrive a Chat\n"
+                      puts "Press 3 to leave the Network\n"
+                      s=gets.to_i
+                      if s==1
+                        chat
+                      elsif s==2
+                        retrive
+                      elsif s==3
+                        leave
+                      else
+                        puts "Wrong choice darlin', try again\n"
+                      end
+                  }
+            }
+  end
+  
+  def chat
+      puts "Inside chat\n"
+      ping
+  end
+
+  def ping
+    puts "Inside ping\n"
+  end
+
+  def retrive
+    puts "Inside retrive\n"
+  end
+
+  def leave
+    puts "Inside leave\n"
+  end
+
   def handleJoinNetwork(attributes)
     puts "Inside handleJoinNetwork"
     @routing_table[attributes.fetch("node_id")] = {node_id: attributes.fetch("node_id"), ip_address: attributes.fetch("ip_address")}
@@ -146,12 +190,11 @@ class Server
     puts "routeInfoMsg = #{routeInfoMsg}"
     return routeInfoMsg
   end
-
  
   def listen
     puts "Listening for messages \n"
     while true
-      @threadPool.process {
+      @msgRecvPool.process {
       message, _ = @udp_node.recvfrom(1024)
       puts "Got input"
       attributes=parseMsg(message)
