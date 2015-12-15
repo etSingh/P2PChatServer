@@ -93,7 +93,9 @@ class Server
 
   def sendMsg(msg, ip)
     puts "sending message #{msg.to_json}"
-    @udp_node.send(msg.to_json, 0, ip, 8767)
+    socket=UDPSocket.new
+    socket.send(msg.to_json, 0, ip, 8767)
+    socket.close
     puts "message sent to #{ip}" 
   end
 
@@ -152,7 +154,9 @@ class Server
     puts "Listening for messages \n"
     while true
       @threadPool.process {
+      puts "Still Waiting"
       message, _ = @udp_node.recvfrom(1024)
+      puts "Got input"
       attributes=parseMsg(message)
       msgType=findMsgType(attributes)
       handleMsg(msgType, attributes)
