@@ -94,7 +94,7 @@ class Server
   def sendMsg(msg, ip)
     puts "sending message #{msg.to_json}"
     @udp_node.send(msg.to_json, 0, ip, 8767)
-    puts "message sent" 
+    puts "message sent to #{ip}" 
   end
 
   def parseMsg(json)
