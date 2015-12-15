@@ -94,7 +94,7 @@ class Server
   def sendMsg(msg, ip)
     puts "sending message #{msg.to_json}"
     #socket=UDPSocket.new
-    @udp_node.send(msg.to_json, 0, ip, 8767)
+    @udp_node.send(msg.to_json, 0, ip, @port)
     #socket.close
     puts "message sent to #{ip}" 
   end
