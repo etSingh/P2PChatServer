@@ -133,8 +133,7 @@ class Server
   def menu
       
       loop {
-      @msgSendPool.process
-                  {
+      @msgSendPool.process {
                       puts "Press 1 to send a Chat message\n"
                       puts "Press 2 to retrive a Chat\n"
                       puts "Press 3 to leave the Network\n"
