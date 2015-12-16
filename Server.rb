@@ -12,13 +12,13 @@ class Server
   def initialize(host, port)
     @host=host
     @port=port
-    @id=$options[:id]
     @handleChatrooms=Chatroom.new(@host, @port)
     @udp_node= UDPSocket.new
     @udp_node.bind(@host, @port)
     #@descriptors=Array.new #Stores all client sockets and the server socket
     #@descriptors.push(@serverSocket)
     @routing_table=Hash.new
+    @routing_table[$options[:id]]={ node_id:$options[:id], ip_address:@host}
     @msgRecvPool=Thread.pool(10)
     @StudentID=ARGV[2]||152
     @chatTextTuple=Hash.new
@@ -73,7 +73,6 @@ class Server
   def determine
     if $options[:ip]==""
       puts "Gateway is running on Port #{@port} with id #{@id}..."
-      @routing_table[$options[:id]]={ node_id:$options[:id], ip_address:@host} #Gateway will add it's own address in the routing table
       listen
     else
       puts "Sending JOINING_NETWORK message to Gateway\n"
@@ -114,14 +113,12 @@ class Server
   end
 
   def handleMsg(msgType, attributes)
-    puts "Inside handleMsg"
+    puts "Inside handleMsg msgType=#{msgType}"
     if msgType=="JOINING_NETWORK"
       handleJoinNetwork(attributes)
-    end
-    if msgType=="ROUTING_INFO"
+    elsif msgType=="ROUTING_INFO"
       handleRoutInfo(attributes)
-    end
-    if msgType=="LEAVING_NETWORK"
+    elsif msgType=="LEAVING_NETWORK"
       handleLeaveNetwork(attributes)
     end
   end
@@ -176,6 +173,7 @@ class Server
     puts "Inside leave\n"
     leaveMsg= { type: "LEAVING_NETWORK", node_id: $options[:id]}
     puts leaveMsg
+    
     @routing_table.each_value do |v|
        puts "Before if, routing_table= #{@routing_table}\n"
        puts " #{v[:node_id]} != #{$options[:id]}\n"
