@@ -134,14 +134,15 @@ class Server
     puts trimmedMsg
     flag=0
     trimmedMsg.each do |v| #trimmed and attributes are hashes with strings as keys, whatever you recieve is a string key hash
+      puts v.fetch("node_id")
       @routing_table.each do |k, d|
           if v.fetch("node_id")==k
               flag=1 #The node is present in the table, won't go ahead with this
           end
       end
           if flag==0 #the node isn't present in the table
-              puts "When flag is zero v[:node_id"
-              @routing_table[v("node_id")]=v
+              puts "When flag is zero"
+              @routing_table[v.fetch("node_id")]=v
           end
           flag=0
     end       
