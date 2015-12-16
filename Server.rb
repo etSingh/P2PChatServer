@@ -178,6 +178,7 @@ class Server
     puts leaveMsg
     @routing_table.each_value do |v|
        if v[:node_id]!=$options[:id] #So that it may not send the message to itself
+       puts "Sending message to #{v[:ip_address]}"
        sendMsg(leaveMsg, v[:ip_address]) 
        end
     end
