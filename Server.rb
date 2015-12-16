@@ -121,6 +121,14 @@ class Server
     if msgType=="ROUTING_INFO"
       handleRoutInfo(attributes)
     end
+    if msgType=="LEAVING_NETWORK"
+      handleLeaveNetwork(attributes)
+    end
+  end
+  
+  def handleLeaveNetwork(attributes)
+   @routing_table.delete(attributes.fetch("node_id"))
+   puts "New Routing table= #{@routing_table}"
   end
   
   def handleRouteInfo(attributes)
@@ -167,7 +175,14 @@ class Server
   def leave
     puts "Inside leave\n"
     leaveMsg= { type: "LEAVING_NETWORK", node_id: $options[:id]}
-    @routing_table.each_value { |v| sendMsg(leaveMsg, v.fetch("ip_address"))}
+    puts leaveMsg
+    @routing_table.each_value do |v|
+       if v[:node_id]!=$options[:id] #So that it may not send the message to itself
+       sendMsg(leaveMsg, v[:ip_address]) 
+       end
+    end
+    puts "Goodbye\n"
+    exit
   end
 
   def handleJoinNetwork(attributes)
