@@ -113,12 +113,11 @@ class Server
   end
 
   def handleMsg(msgType, attributes)
-    puts "Inside handleMsg msgType=#{msgType} now comparing"
-    puts msgType=="ROUTING_INFO"
+    puts "Inside handleMsg msgType=#{msgType}"
     if msgType=="JOINING_NETWORK"
       handleJoinNetwork(attributes)
     elsif msgType=="ROUTING_INFO"
-      handleRoutInfo(attributes)
+      handleRouteInfo(attributes)
     elsif msgType=="LEAVING_NETWORK"
       handleLeaveNetwork(attributes)
     end
