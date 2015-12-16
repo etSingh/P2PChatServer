@@ -177,6 +177,8 @@ class Server
     leaveMsg= { type: "LEAVING_NETWORK", node_id: $options[:id]}
     puts leaveMsg
     @routing_table.each_value do |v|
+       puts "Before if, routing_table= #{@routing_table}\n"
+       puts " #{v[:node_id]} != #{$options[:id]}\n"
        if v[:node_id]!=$options[:id] #So that it may not send the message to itself
        puts "Sending message to #{v[:ip_address]}"
        sendMsg(leaveMsg, v[:ip_address]) 
