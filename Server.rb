@@ -113,7 +113,8 @@ class Server
   end
 
   def handleMsg(msgType, attributes)
-    puts "Inside handleMsg msgType=#{msgType}"
+    puts "Inside handleMsg msgType=#{msgType} now comparing"
+    puts msgType=="ROUTING_INFO"
     if msgType=="JOINING_NETWORK"
       handleJoinNetwork(attributes)
     elsif msgType=="ROUTING_INFO"
@@ -171,7 +172,7 @@ class Server
 
   def leave
     puts "Inside leave\n"
-    leaveMsg= { type: "LEAVING_NETWORK", node_id: $options[:id]}
+    leaveMsg= { type:"LEAVING_NETWORK", node_id: $options[:id]}
     puts leaveMsg
     
     @routing_table.each_value do |v|
