@@ -133,14 +133,15 @@ class Server
     trimmedMsg=attributes.fetch("route_table")
     puts trimmedMsg
     flag=0
-    trimmedMsg.each do |v|
+    trimmedMsg.each do |v| #trimmed and attributes are hashes with strings as keys, whatever you recieve is a string key hash
       @routing_table.each do |k, d|
-          if v[:node_id]==k
+          if v.fetch("node_id")==k
               flag=1 #The node is present in the table, won't go ahead with this
           end
       end
           if flag==0 #the node isn't present in the table
-              @routing_table[v[:node_id]]=v
+              puts "When flag is zero v[:node_id"
+              @routing_table[v("node_id")]=v
           end
           flag=0
     end       
@@ -186,7 +187,6 @@ class Server
   def leave
     puts "Inside leave\n"
     leaveMsg= { type:"LEAVING_NETWORK", node_id: $options[:id]}
-    puts leaveMsg
     
     @routing_table.each_value do |v|
        puts "Before if, routing_table= #{@routing_table}\n"
