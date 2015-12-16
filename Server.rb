@@ -130,9 +130,23 @@ class Server
   
   def handleRouteInfo(attributes)
     puts "Inside handleRouteInfo"
-    @routing_table[attributes.fetch("node_id")]=attributes.fetch("route_table")
-    puts "Routing table = #{@routing_table}"
-    menu
+    trimmedMsg=attributes.fetch("route_table")
+    puts trimmedMsg
+    flag=0
+    trimmedMsg.each do |v|
+      @routing_table.each do |k, d|
+          if v[:node_id]==k
+              flag=1 #The node is present in the table, won't go ahead with this
+          end
+      end
+          if flag==0 #the node isn't present in the table
+              @routing_table[v[:node_id]]=v
+          end
+          flag=0
+    end       
+
+    #@routing_table[attributes.fetch("node_id")]=attributes.fetch("route_table")
+    puts "Routing table = #{@routing_table}\n"
   end
   
   def menu
