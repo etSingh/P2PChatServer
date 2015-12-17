@@ -130,11 +130,13 @@ class Server
     	puts a
     	if a<=min 
     		target=v[:node_id]
+    		puts "target updated to: #{v[:node_id]}"
     	end
     	if target==$options[:id]
-    		puts "This node is the target\n"
+    		puts "log: This node is the target of id #{$options[:id]}\n"
     		prepareChatResponse(attributes)
     	else
+    		puts "log: This node isn't the target, forwarding the packet to node_id- #{target}\n"
     		sendMsg(attributes, @routing_table[target][:ip_address])
     	end
     end
@@ -142,6 +144,7 @@ class Server
 
   def prepareChatResponse(attributes)
      puts "Inside prepareChatResponse\n"
+     #buid the chat retrive message here
   end
   
   def handleLeaveNetwork(attributes)
@@ -218,8 +221,10 @@ class Server
   end
   
   def whichNodesToSendThis(chatMsg) #Needs Significant refining
-      #Presently for simplicity, just send it to all the nodes, including yourself
+      #Presently for simplicity, just send it to all the nodes, excluding yourself
+      puts "log: Inside whichNodesToSendThis"
       @routing_table.each_value do |v|
+      	if v[:node_id]!=$options[:id]
       	puts "Sending message to #{v[:ip_address]}"
         sendMsg(chatMsg, v[:ip_address])
       end
