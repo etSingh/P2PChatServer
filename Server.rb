@@ -110,9 +110,17 @@ class Server
       handleLeaveNetwork(attributes)
   	elsif msgType=="CHAT"
   		handleChatMsg(attributes)
+  	elsif msgType=="ACK_CHAT"
+  		handleAckChat(attributes)
   	end
   end
-
+   
+  def handleAckChat(attributes)
+    puts "log: need to stop timeout if this is for this node\n"
+    targetId=HashIt.hashCode(attributes.fetch("tag"))
+  	ip= getTheNodeToSend(targetId)
+  	puts "log: Sending Ack to #{ip}\n"
+  end 
   
 
   def handleChatMsg(attributes)
@@ -151,13 +159,17 @@ class Server
      targetId=HashIt.hashCode(tag)
      ip= getTheNodeToSend(targetId)
      puts "log: Got ip= #{ip}"
-     sendMsg(ackMsg, ip)
+     if ip!=@host
+      sendMsg(ackMsg, ip)
+     else
+     	puts "log: You generated the ack message, you're probably the only node on the network\n"
+     end
      storeTheMessage(attributes, targetId)
   end
 
   def storeTheMessage(attributes, targetId) #work on this buddy
      puts "Inside storeTheMessage\n"
-     @chatTextTuple[targetId]={ text:"blah blah"}
+     @chatTextTuple[targetId]={ text:"blah blah"}	
   end
 
    def getTheNodeToSend(targetId)
