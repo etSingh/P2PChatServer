@@ -109,18 +109,16 @@ class Server
     elsif msgType=="LEAVING_NETWORK"
       handleLeaveNetwork(attributes)
   	elsif msgType=="CHAT"
-  		sendAckChat(attributes)
   		handleChatMsg(attributes)
   	end
   end
 
-  def sendAckChat(attributes)
-     puts "Inside sendACK_CHAT\n"
-  end
+  
 
   def handleChatMsg(attributes)
   	puts "Inside handleChatMsg\n"
     #Let's find the numerically closest node
+    #and also extract the tag if you are the target
     targetId=attributes.fetch("target_id")
     min=($options[:id]-targetId).abs
     target=-9999
@@ -133,8 +131,9 @@ class Server
     	end
     end
     	if target==$options[:id]
-    		puts "log: This node is the target of chat with hash id #{$options[:id]}\n"
-    		prepareChatResponse(attributes)
+    		tag=attributes.fetch("tag")
+    		puts "log: This node is the target of chat with hash id #{$options[:id]} and tag #{}\n"
+    		sendAckChat(attributes, tag)
     	else
     		puts "log: This node isn't the target, forwarding the packet to node_id- #{target}\n"
     		sendMsg(attributes, @routing_table[target][:ip_address])
@@ -146,6 +145,12 @@ class Server
      #buid the chat retrive message here
   end
   
+  def sendAckChat(attributes)
+     puts "Inside sendACK_CHAT\n"
+     ackMsg={ type: "ACK_CHAT", node_id:attributes.fetch("sender_id"), tag:"fish" }
+     sendMsg(ackMsg, tag)
+  end
+
   def handleLeaveNetwork(attributes)
    @routing_table.delete(attributes.fetch("node_id"))
    puts "New Routing table= #{@routing_table}"
