@@ -224,9 +224,10 @@ class Server
       #Presently for simplicity, just send it to all the nodes, excluding yourself
       puts "log: Inside whichNodesToSendThis"
       @routing_table.each_value do |v|
-      	if v[:node_id]!=$options[:id]
-      	puts "Sending message to #{v[:ip_address]}"
-        sendMsg(chatMsg, v[:ip_address])
+      		if v[:node_id]!=$options[:id]
+      			puts "Sending message to #{v[:ip_address]}"
+        		sendMsg(chatMsg, v[:ip_address])
+        	end
       end
   end
   
