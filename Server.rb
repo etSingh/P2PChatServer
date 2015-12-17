@@ -123,24 +123,23 @@ class Server
     #Let's find the numerically closest node
     targetId=attributes.fetch("target_id")
     min=($options[:id]-targetId).abs
-    puts min
     target=-9999
     @routing_table.each_value do |v|
     	a=(targetId-v[:node_id]).abs
-    	puts a
+    	puts "log: Absolute diff in this iteration= #{a}\n"
     	if a<=min 
     		target=v[:node_id]
     		puts "target updated to: #{v[:node_id]}"
     	end
+    end
     	if target==$options[:id]
-    		puts "log: This node is the target of id #{$options[:id]}\n"
+    		puts "log: This node is the target of chat with hash id #{$options[:id]}\n"
     		prepareChatResponse(attributes)
     	else
     		puts "log: This node isn't the target, forwarding the packet to node_id- #{target}\n"
     		sendMsg(attributes, @routing_table[target][:ip_address])
     	end
     end
-  end
 
   def prepareChatResponse(attributes)
      puts "Inside prepareChatResponse\n"
@@ -230,6 +229,8 @@ class Server
         	end
       end
   end
+
+
   
   def ping
     puts "Inside ping\n"
