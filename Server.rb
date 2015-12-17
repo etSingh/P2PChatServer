@@ -145,10 +145,35 @@ class Server
      #buid the chat retrive message here
   end
   
-  def sendAckChat(attributes)
+  def sendAckChat(attributes, tag)
      puts "Inside sendACK_CHAT\n"
-     ackMsg={ type: "ACK_CHAT", node_id:attributes.fetch("sender_id"), tag:"fish" }
-     sendMsg(ackMsg, tag)
+     ackMsg={ type: "ACK_CHAT", node_id:attributes.fetch("sender_id"), tag:tag }
+     targetId=HashIt.hashCode(tag)
+     ip= getTheNodeToSend(targetId)
+     puts "log: Got ip= #{ip}"
+     sendMsg(ackMsg, ip)
+     storeTheMessage(attributes, targetId)
+  end
+
+  def storeTheMessage(attributes, targetId) #work on this buddy
+     puts "Inside storeTheMessage\n"
+     @chatTextTuple[targetId]={ text:"blah blah"}
+  end
+
+   def getTheNodeToSend(targetId)
+    puts "Inside getTheNodeToSend\n"
+    min=($options[:id]-targetId).abs
+    target=-9999
+    @routing_table.each_value do |v|
+    	a=(targetId-v[:node_id]).abs
+    	puts "log: Absolute diff in this iteration= #{a}\n"
+    	if a<=min 
+    		target=v[:node_id]
+    		puts "target updated to: #{v[:node_id]}"
+    	end
+    end
+    ip=@routing_table[target][:ip_address]
+    return ip
   end
 
   def handleLeaveNetwork(attributes)
@@ -225,13 +250,13 @@ class Server
   end
   
   def whichNodesToSendThis(chatMsg) #Needs Significant refining
-      #Presently for simplicity, just send it to all the nodes, excluding yourself
+      #Presently for simplicity, just send it to all the nodes, including yourself
       puts "log: Inside whichNodesToSendThis"
       @routing_table.each_value do |v|
-      		if v[:node_id]!=$options[:id]
+      		#if v[:node_id]!=$options[:id]
       			puts "Sending message to #{v[:ip_address]}"
         		sendMsg(chatMsg, v[:ip_address])
-        	end
+        	#end
       end
   end
 
