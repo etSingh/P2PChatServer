@@ -1,6 +1,8 @@
 #This class servers as the message handle, it processes the messages recieved
 #from the network and generates appropriate responses, so it effectively acts 
 #as a server, handling messages and sending responses
+#Generartes 3 different messages-JOINING_NETWORK, CHAT_RESPONSE, ROUTING_INFO
+#and JOINING_NETWORK_RELAY 
 #Author: Harpreet Singh
 
 
@@ -71,6 +73,9 @@ class Server
   		handleAckChat(attributes)
   	elsif msgType=="CHAT_RETRIVE"
   		handleRetriveMsg(attributes)
+  	elsif msgType=="CHAT_RESPONSE"
+  		@send.chatResponseAck=true
+  		@send.handleChatResponse(attributes)
   	end
   end
 
@@ -172,6 +177,9 @@ class Server
   def handleLeaveNetwork(attributes)
    @send.routing_table.delete(attributes.fetch("node_id"))
    puts "New Routing table= #{@send.routing_table}"
+  end
+  
+  def joiningNetworkRelay #can only implement this if I have 3 nodes to test
   end
   
   def handleRouteInfo(attributes)
