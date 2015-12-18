@@ -18,17 +18,18 @@ class Server
   def initialize(host, port)
     @host=host
     @port=port
+    @id=$options[:id]
     #@handleChatrooms=Chatroom.new(@host, @port)
     @udp_node= UDPSocket.new
     @udp_node.bind(@host, @port)
     @msgRecvPool=Thread.pool(10)
     @StudentID=ARGV[2]||152
     @chatTextTuple=Hash.new
-    @send=Client.new(host, port, $options[:id], @udp_node)
+    @send=Client.new(host, port, @id, @udp_node)
   end
   
-  def determine
-    if $options[:ip]==""
+  def determine           #The cmd line options are configured in a way that if the node is initialized 
+    if $options[:ip]==""  #as the Gateway then $options[:ip]==""
       puts "Gateway is running on Port #{@port} with id #{@id}..."
       listen
     else
@@ -67,7 +68,36 @@ class Server
   		handleChatMsg(attributes)
   	elsif msgType=="ACK_CHAT"
   		handleAckChat(attributes)
+  	elsif msgType=="CHAT_RETRIVE"
+  		handleRetriveMsg(attributes)
   	end
+  end
+
+  def handleRetriveMsg(attributes) #if this node has the chat, generate response, else forward it on
+  	  ip=getTheNodeToSend
+      if ip==@host
+      	puts "This node will generate the response\n"
+  	    generateResponseMsg(attributes)
+  	  else 							#just forward the message onto the next node
+  	  	@send.sendMsg(attributes, ip)
+  	  end
+  end
+
+  def generateResponseMsg(attributes)
+      puts "Inside generateResponseMsg\n"
+      tag=attributes.fetch("tag")
+      node_id=attributes.fetch("sender_id")
+      responseMsg={
+      	           type:"CHAT_RESPONSE",
+    			   tag:tag,
+    			   node_id:node_id,  #The id of the message originator
+    			   sender_id:@id,    #The id of this node
+    			   response:@chatTextTuple[HashIt.hashCode(tag)].values
+     			  }
+      puts responseMsg
+      ip=getTheNodeToSend(node_id)
+      @send.sendMsg(responseMsg, ip)
+      puts "Response message sent\n"
   end
    
   def handleAckChat(attributes)
@@ -128,7 +158,8 @@ class Server
 
   def storeTheMessage(attributes, targetId) #work on this buddy
      puts "Inside storeTheMessage\n"
-     @chatTextTuple[targetId]={ text:"blah blah"}	
+     @chatTextTuple[targetId]={ text:attributes.fetch("text") }	
+     puts @chatTextTuple
   end
 
   def handleLeaveNetwork(attributes)
@@ -155,15 +186,7 @@ class Server
     puts "Routing table = #{@send.routing_table}\n"
   end
   
-  
-  
-  def ping
-    puts "Inside ping\n"
-  end
-
-  
-  
-
+ 
   def handleJoinNetwork(attributes)
     puts "Inside handleJoinNetwork"
     @send.routing_table[attributes.fetch("node_id")] = { node_id: attributes.fetch("node_id"), ip_address: attributes.fetch("ip_address")}
