@@ -1,4 +1,8 @@
-# A skeleton TCPserver
+#This class servers as the message handle, it processes the messages recieved
+#from the network and generates appropriate responses, so it effectively acts 
+#as a server, handling messages and sending responses
+#Author: Harpreet Singh
+
 $LOAD_PATH << '.'
 require 'socket'
 require 'optparse'
@@ -6,56 +10,21 @@ require 'json'
 require  "src/hashIt.rb"
 require "lib/threadpool.rb"
 require "src/chatroom.rb"
+require_relative "./client.rb"
 
 class Server
 
+  
   def initialize(host, port)
     @host=host
     @port=port
-    @handleChatrooms=Chatroom.new(@host, @port)
+    #@handleChatrooms=Chatroom.new(@host, @port)
     @udp_node= UDPSocket.new
     @udp_node.bind(@host, @port)
-    #@descriptors=Array.new #Stores all client sockets and the server socket
-    #@descriptors.push(@serverSocket)
-    @routing_table=Hash.new
-    @routing_table[$options[:id]]={ node_id:$options[:id], ip_address:@host}
     @msgRecvPool=Thread.pool(10)
     @StudentID=ARGV[2]||152
     @chatTextTuple=Hash.new
-    menu
-  end
-  
- def handle_Connection(input, client)
-    
-    if input[0,4]=="HELO"
-      client.puts "#{input}\nIP:#{@host}\nPort:#{@port}\nStudentID:#{@StudentID}\n"
-      puts "log: sending HELO message"
-    elsif input=="KILL_SERVICE"
-      terminate
-    elsif input[0,13]=="JOIN_CHATROOM"
-      @handleChatrooms.servJoinReq(input, client) # Service the join request of the client
-    elsif input[0,14]=="LEAVE_CHATROOM"
-       @handleChatrooms.leaveChatroomMsg(input, client)
-    elsif input[0,5]=="CHAT:"
-       @handleChatrooms.handleChatMsg(input, client)
-    elsif input[0,11]=="DISCONNECT:"
-       @handleChatrooms.handleDisconnectMsg(client)
-    else
-      puts "log: Invalid message"
-    end
-  end
-
-
-  def terminate #terminates all socket connections, terminating clients first
-    @descriptors.each do |socket|  
-      if socket!= @serverSocket
-         socket.close
-      end
-    end
-      puts "Server Shutting down \n"
-      @serverSocket.close   
-      abort("Goodbye")
-      exit
+    @send=Client.new(host, port, $options[:id], @udp_node)
   end
   
   def determine
@@ -69,23 +38,9 @@ class Server
     end
   end
 
-  def response
-    puts "Waiting for response from gateway"
-    msg, _=@udp_node.recvfrom(1024)
-    puts "got msg #{msg}"
-    attributes=parseMsg(msg)
-  end
-
-
   def sendJoinNetwork
     joinMsg={ type:"JOINING_NETWORK", node_id:$options[:id], ip_address:@host }
-    sendMsg(joinMsg, $options[:ip])  
-  end
-
-  def sendMsg(msg, ip)
-    puts "sending message #{msg.to_json}"
-    @udp_node.send(msg.to_json, 0, ip, @port)
-    puts "message sent to #{ip}" 
+    @send.sendMsg(joinMsg, $options[:ip])  
   end
 
   def parseMsg(json)
@@ -101,7 +56,7 @@ class Server
   end
 
   def handleMsg(msgType, attributes)
-    puts "Inside handleMsg msgType=#{msgType}"
+    #puts "Inside handleMsg msgType=#{msgType}"
     if msgType=="JOINING_NETWORK"
       handleJoinNetwork(attributes)
     elsif msgType=="ROUTING_INFO"
@@ -122,15 +77,11 @@ class Server
   	puts "log: Sending Ack to #{ip}\n"
   end 
   
-
-  def handleChatMsg(attributes)
-  	puts "Inside handleChatMsg\n"
-    #Let's find the numerically closest node
-    #and also extract the tag if you are the target
-    targetId=attributes.fetch("target_id")
+  def getTheNodeToSend(targetId)
+    puts "Inside getTheNodeToSend\n"
     min=($options[:id]-targetId).abs
     target=-9999
-    @routing_table.each_value do |v|
+    @send.routing_table.each_value do |v|
     	a=(targetId-v[:node_id]).abs
     	puts "log: Absolute diff in this iteration= #{a}\n"
     	if a<=min 
@@ -138,19 +89,27 @@ class Server
     		puts "target updated to: #{v[:node_id]}"
     	end
     end
-    	if target==$options[:id]
+    ip=@send.routing_table[target][:ip_address]
+    return ip
+  end
+
+  def handleChatMsg(attributes)       #Finds the numerically closest node and also extracts the tag if this
+  	puts "Inside handleChatMsg\n"     #node is the target
+    targetId=attributes.fetch("target_id")
+    ip=getTheNodeToSend(targetId)
+    	if ip==@host
     		tag=attributes.fetch("tag")
-    		puts "log: This node is the target of chat with hash id #{$options[:id]} and tag #{}\n"
+    		puts "log: This node is the target of chat with hash id #{$options[:id]} and tag #{tag}\n"
     		sendAckChat(attributes, tag)
     	else
     		puts "log: This node isn't the target, forwarding the packet to node_id- #{target}\n"
-    		sendMsg(attributes, @routing_table[target][:ip_address])
+    		@send.sendMsg(attributes, @send.routing_table[target][:ip_address])
     	end
     end
 
   def prepareChatResponse(attributes)
      puts "Inside prepareChatResponse\n"
-     #buid the chat retrive message here
+     #buid the chat response message here
   end
   
   def sendAckChat(attributes, tag)
@@ -159,11 +118,11 @@ class Server
      targetId=HashIt.hashCode(tag)
      ip= getTheNodeToSend(targetId)
      puts "log: Got ip= #{ip}"
-     if ip!=@host
-      sendMsg(ackMsg, ip)
-     else
-     	puts "log: You generated the ack message, you're probably the only node on the network\n"
-     end
+     #if ip!=@host
+      @send.sendMsg(ackMsg, ip)
+     #else
+     	#puts "log: You generated the ack message, you're probably the only node on the network\n"
+     #end
      storeTheMessage(attributes, targetId)
   end
 
@@ -172,25 +131,9 @@ class Server
      @chatTextTuple[targetId]={ text:"blah blah"}	
   end
 
-   def getTheNodeToSend(targetId)
-    puts "Inside getTheNodeToSend\n"
-    min=($options[:id]-targetId).abs
-    target=-9999
-    @routing_table.each_value do |v|
-    	a=(targetId-v[:node_id]).abs
-    	puts "log: Absolute diff in this iteration= #{a}\n"
-    	if a<=min 
-    		target=v[:node_id]
-    		puts "target updated to: #{v[:node_id]}"
-    	end
-    end
-    ip=@routing_table[target][:ip_address]
-    return ip
-  end
-
   def handleLeaveNetwork(attributes)
-   @routing_table.delete(attributes.fetch("node_id"))
-   puts "New Routing table= #{@routing_table}"
+   @send.routing_table.delete(attributes.fetch("node_id"))
+   puts "New Routing table= #{@send.routing_table}"
   end
   
   def handleRouteInfo(attributes)
@@ -199,112 +142,35 @@ class Server
     puts trimmedMsg
     flag=0
     trimmedMsg.each do |v| #trimmed and attributes are hashes with strings as keys, whatever you recieve is a string key hash
-      @routing_table.each do |k, d|
+      @send.routing_table.each do |k, d|
           if v.fetch("node_id")==k
               flag=1 #The node is present in the table, won't go ahead with this
           end
       end
           if flag==0 #the node isn't present in the table
-              @routing_table[v.fetch("node_id")]={ node_id:v.fetch("node_id"), ip_address:v.fetch("ip_address")}
+              @send.routing_table[v.fetch("node_id")]={ node_id:v.fetch("node_id"), ip_address:v.fetch("ip_address")}
           end
           flag=0
     end       
-    puts "Routing table = #{@routing_table}\n"
+    puts "Routing table = #{@send.routing_table}\n"
   end
   
-  def menu
-      Thread.new do
-        loop {
-          puts "Press 1 to send a Chat message\n"
-          puts "Press 2 to retrive a Chat\n"
-          puts "Press 3 to leave the Network\n"
-          s=$stdin.gets.to_i
-          if s==1
-            chat
-          elsif s==2
-            retrive
-          elsif s==3
-            leave
-          else
-            puts "Wrong choice darlin', try again\n"
-          end
-          }
-      end
-  end
   
-  def chat
-      puts "Inside chat\n"
-      puts "Enter a chat message\n"
-      msg=$stdin.gets.chomp
-      if msg.include? '#'
-        puts "Sending your message\n"
-      else
-        puts "message should have a # atleast once, try again\n"
-        chat
-      end
-     tags=msg.scan(/#\w+/).flatten #Extrat all tags 
-     puts tags
-     tags.each { |t| generateChatMsg(t, msg) }
- end
-  
-  def generateChatMsg(tag, msg)
-  	puts "Inside generateChatMsg with tag-#{tag}\n"
-  	trimTag=tag[1..(tag.length)] #removing the hash character 
-    chatMsg={ 
-    		  type:"CHAT", 
-    		  target_id:HashIt.hashCode(trimTag), 
-    		  sender_id:$options[:id], 
-    		  tag:trimTag, 
-    		  text:msg 
-    		}
-    puts chatMsg
-    whichNodesToSendThis(chatMsg)
-  end
-  
-  def whichNodesToSendThis(chatMsg) #Needs Significant refining
-      #Presently for simplicity, just send it to all the nodes, including yourself
-      puts "log: Inside whichNodesToSendThis"
-      @routing_table.each_value do |v|
-      		#if v[:node_id]!=$options[:id]
-      			puts "Sending message to #{v[:ip_address]}"
-        		sendMsg(chatMsg, v[:ip_address])
-        	#end
-      end
-  end
-
-
   
   def ping
     puts "Inside ping\n"
   end
 
-  def retrive
-    puts "Inside retrive\n"
-  end
-
-  def leave
-    puts "Inside leave\n"
-    leaveMsg= { type:"LEAVING_NETWORK", node_id: $options[:id] }
-    
-    @routing_table.each_value do |v|
-       puts "log: Before if, routing_table= #{@routing_table}\n"
-       puts "log: #{v[:node_id]} != #{$options[:id]}\n"
-       if v[:node_id]!=$options[:id] #So that it may not send the message to itself
-       puts "Sending message to #{v[:ip_address]}"
-       sendMsg(leaveMsg, v[:ip_address]) 
-       end
-    end
-    puts "Goodbye\n"
-    exit
-  end
+  
+  
 
   def handleJoinNetwork(attributes)
     puts "Inside handleJoinNetwork"
-    @routing_table[attributes.fetch("node_id")] = { node_id: attributes.fetch("node_id"), ip_address: attributes.fetch("ip_address")}
+    @send.routing_table[attributes.fetch("node_id")] = { node_id: attributes.fetch("node_id"), ip_address: attributes.fetch("ip_address")}
     puts "Printing routing table"
-    puts @routing_table
+    puts @send.routing_table
     routeInfoMsg=buildRouteInfoMsg(attributes)
-    sendMsg(routeInfoMsg, attributes.fetch("ip_address"))
+    @send.sendMsg(routeInfoMsg, attributes.fetch("ip_address"))
   end
 
   def buildRouteInfoMsg(attributes)
@@ -314,7 +180,7 @@ class Server
                     gateway_id: $options[:id], 
                     node_id: attributes.fetch("node_id"), 
                     ip_address: attributes.fetch("ip_address"),
-                    route_table: @routing_table.values
+                    route_table: @send.routing_table.values
                   }
     puts "routeInfoMsg = #{routeInfoMsg}"
     return routeInfoMsg
@@ -337,7 +203,7 @@ class Server
 end
 
 if __FILE__ == $0
-  #cmd arguments
+  #--------------------------------------------Command Line Arguments Handler--------------------------------------------------------------
   $options = {} #Stores id of the node, and ip of the Gateway, if the node is the gateway, then ip=""
 
   optparse = OptionParser.new do|opts|
@@ -376,7 +242,8 @@ if __FILE__ == $0
     puts optparse                                                          
     exit                                                                   
   end 
-
+#---------------------------------------------End of Command line Arguments Handler-----------------------------------------------------
+  
   puts "Initialized with options- #{$options}"
   server = Server.new(ARGV[0]||"localhost", ARGV[1]||8767)
   server.determine
