@@ -1,209 +1,115 @@
+#This class serves as a client, essentialy facilitating the user to send
+#different messages supported by the protocol
+#Author: Harpreet Singh
+
 require 'socket'
+require 'json'
+
 
 class Client
 
-def initialize(host,port) 
-	@s = TCPSocket.new(host, port)
-	@clientName
-	@chatroom
-	@retryJoinReqFlag=0
-	@room_ref=Hash.new #room_ref as key, chatroom name as value
-	@join_ID
-	@join_details=Array.new
-	puts "log: Starting Session \n"
-end
+ attr_accessor :routing_table
 
-def retryResponse
-		puts "Do you want to retry?(y/n)"
-		choice=$stdin.gets
-		if choice[0]=="y"
-			@s.puts "Retrying"
-			@retryJoinReqFlag=1
-		elsif choice[0]=="n"
-            @s.puts "Close the connection"
-            @s.close
-			abort("Goodbye")
-		else
-			puts "Invalid choice...try again"
-			retryResponse
-		end
-end
-
-def detectError
-	lineFromServer=@s.gets
-	if lineFromServer[0,5]=="ERROR"
-		puts "#{lineFromServer}#{@s.gets}"
-		retryResponse
-	else
-		puts lineFromServer
-		@join_details[0]=lineFromServer.slice((lineFromServer.index(':')+1)..lineFromServer.length).chomp
-		@detectErrorFlag=1
-	end
-end
-
-def initialJoinRequest
-	puts "Enter a username:"
-	@clientName= $stdin.gets
-	puts "Enter the name of the chatroom you would like to join"
-	@chatroom=$stdin.gets.chomp
-	@s.puts "JOIN_CHATROOM:#{@chatroom}\nClient_IP:\nPORT:\nCLIENT_NAME:#{@clientName}"
-end
-
-def getJoinResponse
-	if @detectErrorFlag==1
-		i=1
-	else
-		i=0
-	end
-	while i<=4
-		lineFromServer= @s.gets
-		@join_details[i]=lineFromServer.slice((lineFromServer.index(':')+1)..lineFromServer.length).chomp
-		puts lineFromServer
-		i+=1
-	end
-	@detectErrorFlag=0
-end
-
-def records
-	@room_ref[@join_details[3]]=@join_details[0]
-	@join_ID=@join_details[4]
-end
-
-def recvWelcomeMsg
-	puts "*****************Welcome Notification****************\n"
-	puts @s.gets
-	puts @s.gets
-	puts @s.gets.chomp
-	puts @s.gets
-	puts "*****************************************************\n"
-end
-
-def recvLeaveMsg
-	puts "*****************Leaving Notification****************\n"
-	puts @s.gets
-	puts @s.gets.chomp
-	puts "*****************************************************\n"
-    getmsg #might need this, depends on the protocol
-end
-
-def getmsg
-	#puts "You are now in chatroom"
-	puts @s.gets
-	puts @s.gets
-	puts @s.gets.chomp
-	puts @s.gets
+def initialize(host, port, id, node)
+	@host=host
+	@port=port
+	@id=id
+	@node=node #The udp node
+    @routing_table=Hash.new
+    @routing_table[@id]={ node_id:@id, ip_address:@host}
+    menu
 end
 
 def menu
-	puts "***********************Menu************************\n"
-	puts "Enter 1 to post a message to a chatroom"
-	puts "Enter 2 to leave a chatroom"
-	puts "Enter 3 to join another chatroom"
-	puts "Enter 4 to send HELO/KILL_SERVICE messages to server"
-	puts "***************************************************\n"
-	ch=gets.to_i
-	if ch==1
-		postMsg
-	elsif ch==2
-		leaveChatroom
-	elsif ch==3
-		sendJoinRequest
-	elsif ch==4
-		baseTestMsg
-	else
-		puts "invalid selection"
-		menu
-	end
+      Thread.new do
+        loop {
+          puts "Press 1 to send a Chat message\n"
+          puts "Press 2 to retrive a Chat\n"
+          puts "Press 3 to leave the Network\n"
+          s=$stdin.gets.to_i
+          if s==1
+            chat
+          elsif s==2
+            retrive
+          elsif s==3
+            leave
+          else
+            puts "Wrong choice darlin', try again\n"
+          end
+          }
+      end
 end
 
-def info
-	puts "You are presently connected to the following chatrooms:- "
-	@room_ref.each_value { |value| puts "#{value} " }
+def chat
+      puts "Enter a chat message\n"
+      msg=$stdin.gets.chomp
+      if msg.include? '#'
+        puts "Sending your message\n"
+      else
+        puts "message should have a # atleast once, try again\n"
+        chat
+      end
+     tags=msg.scan(/#\w+/).flatten #Extrat all tags 
+     puts tags
+     tags.each { |t| generateChatMsg(t, msg) }
+ end
+  
+  def generateChatMsg(tag, msg)
+  	puts "Inside generateChatMsg with tag-#{tag}\n"
+  	trimTag=tag[1..(tag.length)] #removing the hash character 
+    chatMsg={ 
+    		  type:"CHAT", 
+    		  target_id:HashIt.hashCode(trimTag), 
+    		  sender_id:$options[:id], 
+    		  tag:trimTag, 
+    		  text:msg 
+    		}
+    puts chatMsg
+    whichNodesToSendThis(chatMsg)
+  end
+  
+  def whichNodesToSendThis(chatMsg) #Will be exactly similar to getthenodetosendthis
+      #Presently for simplicity, just send it to all the nodes, including yourself
+      puts "log: Inside whichNodesToSendThis printing routing table"
+      puts @routing_table
+      @routing_table.each_value do |v|
+      		#if v[:node_id]!=$options[:id]
+      			puts "Sending message to #{v[:ip_address]}"
+        		sendMsg(chatMsg, v[:ip_address])
+        	#end
+      end
+  end
+
+  def sendMsg(msg, ip)
+    puts "sending message #{msg.to_json} from sendingGateway"
+    @node.send(msg.to_json, 0, ip, @port)
+    puts "message sent to #{ip}" 
+  end
+
+def retrive
+    puts "Inside retrive\n"
 end
 
-def postMsg
-	info
-	puts "Enter the name of the chatroom you would like to post a message to"
-	input=gets.chomp
-	if @room_ref.has_value?(input)
-		puts "Enter your message"
-		msg=gets
-		@s.puts "CHAT:#{@room_ref.key(input)}\nJOIN_ID:#{join_ID}\nCLIENT_NAME:#{clientName}\nMESSAGE:msg\n"
-	    puts "****************Message sent***************\n"
-	    puts "CHAT:#{@room_ref.key(input)}\nJOIN_ID:#{join_ID}\nCLIENT_NAME:#{clientName}\nMESSAGE:msg\n"
-	    puts "*******************************************\n"
-	else
-		puts "Incorrect Input, try again.."
-		postMsg
+def leave
+    puts "Inside leave\n"
+    leaveMsg= { type:"LEAVING_NETWORK", node_id: $options[:id] }
+    
+    @routing_table.each_value do |v|
+       puts "log: Before if, routing_table= #{@routing_table}\n"
+       puts "log: #{v[:node_id]} != #{@id}\n"
+       if v[:node_id]!=@id #So that it may not send the message to itself
+       puts "Sending message to #{v[:ip_address]}"
+       sendMsg(leaveMsg, v[:ip_address]) 
+       end
     end
-	menu
-end
+    puts "Goodbye\n"
+    exit
+  end
 
-def leaveChatroom
-	info
-	puts "Enter the name of the chatroom you would like to leave"
-	input=gets.chomp
-	if @room_ref.has_value?(input)
-		@s.puts "LEAVE_CHATROOM:#{@room_ref.key(input)}\nJOIN_ID:#{@join_ID}\nCLIENT_NAME:#{@clientName}"
-	    puts "****************Message sent***************\n"
-	    puts "LEAVE_CHATROOM:#{@room_ref.key(input)}\nJOIN_ID:#{@join_ID}\nCLIENT_NAME:#{@clientName}"
-	    puts "*******************************************\n"
-	else
-		puts "Incorrect Input, try again.."
-		leaveChatroom
-    end
-    recvLeaveMsg
-	menu
-end
-
-def sendJoinRequest
-end
-	
-def baseTestMsg 
-    	
-    	puts "Say something to Server"
-		l=$stdin.gets
-		@s.puts l
-
-		if l[0,4]=="HELO"
-			puts "**************Hello Message**************\n"
-			i=0
-			while(i<=3)
-				lineFromServer=@s.gets
-			 	puts "#{lineFromServer}"
-			 	i+=1
-			end
-			puts "*****************************************\n"
-		elsif l[0,4]=="KILL"
-			puts "Terminating Server socket"
-    	else
-	    	puts "Invalid base message"
-    	end
-    menu
-end
-
-def run
-    initialJoinRequest
-    detectError
-    if @retryJoinReqFlag==1
-    	puts "log: Calling servJoinRequest again"
-    	@retryJoinReqFlag=0
-    	initialJoinRequest
-    end
-    getJoinResponse
-    recvWelcomeMsg 
-    records
-    menu
-end
 
 end
 
-if _FILE_=$0
 
-client = Client.new(ARGV[0]||"Localhost",ARGV[1]||5000)
-client.run()
-
-end
 
 
 
