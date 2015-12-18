@@ -22,7 +22,7 @@ class Server
     #@handleChatrooms=Chatroom.new(@host, @port)
     @udp_node= UDPSocket.new
     @udp_node.bind(@host, @port)
-    @msgRecvPool=Thread.pool(10)
+    @msgRecvPool=Thread.pool(3)
     @StudentID=ARGV[2]||152
     @chatTextTuple=Hash.new
     @send=Client.new(host, port, @id, @udp_node)
