@@ -15,9 +15,9 @@ def initialize(host, port, id, node)
 	@port=port
 	@id=id
 	@node=node #The udp node
-    @routing_table=Hash.new
-    @routing_table[@id]={ node_id:@id, ip_address:@host}
-    menu
+  @routing_table=Hash.new
+  @routing_table[@id]={ node_id:@id, ip_address:@host}
+  menu
 end
 
 def menu
@@ -58,14 +58,26 @@ def chat
   	puts "Inside generateChatMsg with tag-#{tag}\n"
   	trimTag=tag[1..(tag.length)] #removing the hash character 
     chatMsg={ 
-    		  type:"CHAT", 
-    		  target_id:HashIt.hashCode(trimTag), 
-    		  sender_id:$options[:id], 
-    		  tag:trimTag, 
-    		  text:msg 
-    		}
+      		  type:"CHAT", 
+      		  target_id:HashIt.hashCode(trimTag), 
+      		  sender_id:$options[:id], 
+      		  tag:trimTag, 
+      		  text:msg 
+      		  }
     puts chatMsg
     whichNodesToSendThis(chatMsg)
+  end
+
+  def generateChatRetriveMsg(tag)
+     puts "Inside generateChatRetriveMsg \n"
+     retriveMsg={
+                 type:"CHAT_RETRIVE",
+                 tag:tag,
+                 node_id:HashIt.hashCode(tag),
+                 sender_id:@id          
+                } 
+      puts retriveMsg
+      whichNodesToSendThis(retriveMsg)          
   end
   
   def whichNodesToSendThis(chatMsg) #Will be exactly similar to getthenodetosendthis
@@ -88,6 +100,27 @@ def chat
 
 def retrive
     puts "Inside retrive\n"
+    puts "Enter the tag for which you would like to retrive chat\n"
+    tag=$stdin.gets.chomp
+    t=pruneTag(tag)
+    puts "Building message to retrive chat with the tag #{t}\n"
+    generateChatRetriveMsg(t)
+end
+
+def pruneTag(tag)
+    if tag.include? ' '
+      puts tag.index(' ')
+      t=tag[0..(tag.index(' ')-1)]
+      return t
+    end
+     
+    if tag.include? '#'
+      t=tag[1..(tag.length)]
+      return t
+    else
+      t=tag
+      return t
+    end
 end
 
 def leave
@@ -106,6 +139,9 @@ def leave
     exit
   end
 
+def ping
+    puts "Inside ping\n"
+end
 
 end
 
