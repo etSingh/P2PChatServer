@@ -3,6 +3,7 @@
 #as a server, handling messages and sending responses
 #Author: Harpreet Singh
 
+
 $LOAD_PATH << '.'
 require 'socket'
 require 'optparse'
@@ -22,9 +23,9 @@ class Server
     #@handleChatrooms=Chatroom.new(@host, @port)
     @udp_node= UDPSocket.new
     @udp_node.bind(@host, @port)
-    @msgRecvPool=Thread.pool(3)
+    @msgRecvPool=Thread.pool(10)
     @StudentID=ARGV[2]||152
-    @chatTextTuple=Hash.new
+    @chatTextTuple=Hash.new( [].freeze )
     @send=Client.new(host, port, @id, @udp_node)
   end
   
@@ -74,7 +75,10 @@ class Server
   end
 
   def handleRetriveMsg(attributes) #if this node has the chat, generate response, else forward it on
-  	  ip=getTheNodeToSend
+  	  puts "log: Inside handleRetriveMsg\n"
+  	  targetId=attributes.fetch("node_id") #extract the targetId which is the hash of the tag
+  	  ip=getTheNodeToSend(targetId) #get the ip address corresponding to the node matching the closest ip
+      puts
       if ip==@host
       	puts "This node will generate the response\n"
   	    generateResponseMsg(attributes)
@@ -85,14 +89,17 @@ class Server
 
   def generateResponseMsg(attributes)
       puts "Inside generateResponseMsg\n"
+      puts "Printing attributes\n"
+      puts attributes
       tag=attributes.fetch("tag")
       node_id=attributes.fetch("sender_id")
+      puts "node_id=#{node_id} tag=#{tag}"
       responseMsg={
       	           type:"CHAT_RESPONSE",
     			   tag:tag,
     			   node_id:node_id,  #The id of the message originator
     			   sender_id:@id,    #The id of this node
-    			   response:@chatTextTuple[HashIt.hashCode(tag)].values
+    			   response:@chatTextTuple[HashIt.hashCode(tag)]
      			  }
       puts responseMsg
       ip=getTheNodeToSend(node_id)
@@ -113,7 +120,7 @@ class Server
     target=-9999
     @send.routing_table.each_value do |v|
     	a=(targetId-v[:node_id]).abs
-    	puts "log: Absolute diff in this iteration= #{a}\n"
+    	# puts "log: Absolute diff in this iteration= #{a}\n"
     	if a<=min 
     		target=v[:node_id]
     		puts "target updated to: #{v[:node_id]}"
@@ -125,8 +132,8 @@ class Server
 
   def handleChatMsg(attributes)       #Finds the numerically closest node and also extracts the tag if this
   	puts "Inside handleChatMsg\n"     #node is the target
-    targetId=attributes.fetch("target_id")
-    ip=getTheNodeToSend(targetId)
+    targetId=attributes.fetch("target_id") #Extracts the id of the tag
+    ip=getTheNodeToSend(targetId) #returns the ip address of the node which has the closest id to the tag hash
     	if ip==@host
     		tag=attributes.fetch("tag")
     		puts "log: This node is the target of chat with hash id #{$options[:id]} and tag #{tag}\n"
@@ -142,7 +149,7 @@ class Server
      #buid the chat response message here
   end
   
-  def sendAckChat(attributes, tag)
+  def sendAckChat(attributes, tag) #If this node is the target, it sends an acknoledgement and stores the message
      puts "Inside sendACK_CHAT\n"
      ackMsg={ type: "ACK_CHAT", node_id:attributes.fetch("sender_id"), tag:tag }
      targetId=HashIt.hashCode(tag)
@@ -158,7 +165,7 @@ class Server
 
   def storeTheMessage(attributes, targetId) #work on this buddy
      puts "Inside storeTheMessage\n"
-     @chatTextTuple[targetId]={ text:attributes.fetch("text") }	
+     @chatTextTuple[targetId] += [{ text: attributes.fetch("text") }]	
      puts @chatTextTuple
   end
 

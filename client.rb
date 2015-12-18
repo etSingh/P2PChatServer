@@ -59,7 +59,7 @@ def chat
   	trimTag=tag[1..(tag.length)] #removing the hash character 
     chatMsg={ 
       		  type:"CHAT", 
-      		  target_id:HashIt.hashCode(trimTag), 
+      		  target_id:HashIt.hashCode(trimTag), #hash of the tag, the node having id closed to that will respond
       		  sender_id:$options[:id], 
       		  tag:trimTag, 
       		  text:msg 
@@ -73,7 +73,7 @@ def chat
      retriveMsg={
                  type:"CHAT_RETRIVE",
                  tag:tag,
-                 node_id:HashIt.hashCode(tag),
+                 node_id:HashIt.hashCode(tag), #this should go to the node having the id closest to the hash of the tag
                  sender_id:@id          
                 } 
       puts retriveMsg
