@@ -1,7 +1,22 @@
-# Ruby-ChatServer
+# P2P Chat Server (Based on Pastry)
 
-1. Add the location of ruby bin to the path of your pc for the batch files to work
-2. Run Start.bat. The batch file will launch the Server and a client on port 5000 by default.
-3. Command line arguments for server=> ruby Server.rb [IP address] [Port No] [Student ID]
+Author: Harpreet Singh
 
+##Background
 
+1. Each Node can send and recieve messages
+2. All communication is done via **UDP** sockets on *port 8767* by default
+3. All messages are sent in **JSON format** using standard ruby json libraries
+4. A joining node has to *know* the ip address of any node *already* in the network
+
+##Starting the network
+
+1. cd into this repo
+2. To initialize the first node in the network use the following command:
+    $ ruby Server.rb [ip_address] [port_no] --boot [integer identifier]
+3. Subsequently, more nodes can be added in the network using the command:
+    $ ruby Server.rb [ip_address] [port_no] --bootstrap [IP Address] --id[integer identifier]
+Note: The ip address after --bootstrap option should be a valid ip of any other node
+already present in the network
+
+###More Documentation about all the features soon!
