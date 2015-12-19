@@ -10,7 +10,7 @@ Author: Harpreet Singh
    and client, which is really cool
 2. All communication is done on *port 8767* by default via **UDP** sockets because `TCP sucks` 
 3. All messages are sent in **JSON format** using standard ruby json libraries
-4. A joining node has to **know** the **ip address** of any node *already* in the network
+4. A joining node has to **know** the **ip address** of any node *already* on the network
 5. Messages are sent back and forth via Prefix routing 
 
 ####Starting the network
@@ -31,10 +31,9 @@ $ ruby Server.rb [ip_address] [port_no] --bootstrap [IP Address] --id[integer id
 **Note**: The ip address after --bootstrap option should be a valid ip of any other node
 already present in the network for communication to commence!!
 
-####TCP Chat Server
-####(Lab 2 & Lab 3)
+#####TCP Chat Server (Lab 2 & Lab 3)
 
 To have a look at that, just change branch to lab3
-or checkout the repo- https://github.com/omnigrass/Ruby-ChatServer
+or visit the repo- https://github.com/omnigrass/Ruby-ChatServer
 
 #####Enjoy
