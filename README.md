@@ -22,7 +22,7 @@ Author: Harpreet Singh
 ```
 $ ruby Server.rb [ip_address] [port_no] --boot [integer identifier]
 ```    
-4. Subsequently, more nodes can be added in the network using the command:
+ Subsequently, more nodes can be added in the network using the command:
 
 ```   
 $ ruby Server.rb [ip_address] [port_no] --bootstrap [IP Address] --id[integer identifier]
@@ -32,7 +32,7 @@ $ ruby Server.rb [ip_address] [port_no] --bootstrap [IP Address] --id[integer id
 already present in the network for communication to commence!!
 
 ####TCP Chat Server
-##########Lab 2 & Lab 3
+####(Lab 2 & Lab 3)
 
 To have a look at that, just change branch to lab3
 or checkout the repo- https://github.com/omnigrass/Ruby-ChatServer
