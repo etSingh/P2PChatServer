@@ -1,3 +1,7 @@
+#This class is not used for P2P, it is earlier part of the project when I was
+#implementing a ChatServer(lab 3)
+#I still have it because I might refactor the other classes and move some code here
+
 
 require_relative "./hashIt.rb"
 
