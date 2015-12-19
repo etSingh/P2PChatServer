@@ -164,6 +164,7 @@ def chat
      puts "InsideChatResponse\n"
      puts "Chat Response for tag #{attributes.fetch("tag")}:\n"
      puts attributes.fetch("response")
+     @chatResponseAck=false #Reinitializing it for next time
   end
 
 
@@ -181,6 +182,7 @@ def chat
   def handlePingAck(attributes)
       puts "Ping Ack recieved\n"
       puts "The route is still valid for #{attributes.fetch("node_id")}\n"
+      @pingAck=fales #Reinitializing it for next time
   end
 
   def parseMsg(message)
