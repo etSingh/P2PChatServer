@@ -1,9 +1,8 @@
 # P2P Chat System (Based on Pastry)
-#####Individual Programming Project
 
 Author: Harpreet Singh
 
-####Background
+#### Background
 
 1. This is a no frills implementation of a P2P chat System based on Pastry
 2. Each Node can send and recieve messages, simultaneously acting as a server
@@ -13,7 +12,7 @@ Author: Harpreet Singh
 4. A joining node has to **know** the **ip address** of any node *already* on the network
 5. Messages are sent back and forth via Prefix routing 
 
-####Starting the network
+#### Starting the network
 
 1. Be Sure to have `ruby 2.x` installed and added to your system `PATH`
 2. cd into this repo
@@ -31,9 +30,4 @@ $ ruby Server.rb [ip_address] [port_no] --bootstrap [IP Address] --id[integer id
 **Note**: The ip address after --bootstrap option should be a valid ip of any other node
 already present in the network for communication to commence!!
 
-#####TCP Chat Server (Lab 2 & Lab 3)
-
-To have a look at that, just change branch to lab3
-or visit the repo- https://github.com/omnigrass/Ruby-ChatServer
-
-#####Enjoy
+##### Enjoy
